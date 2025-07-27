@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 export const siteConfig: Metadata = {
-  title: 'Image AI',
-  description: 'Canva clone with customizable templates and AI-powered features for effortless visual creation.',
+  title: 'KrediMage: Where imagination become nightmare :-)',
+  description: 'Professional design platform with customizable templates and AI-powered features for effortless visual creation.',
   keywords: [
     'reactjs',
     'nextjs',

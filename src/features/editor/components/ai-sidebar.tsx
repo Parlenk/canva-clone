@@ -29,18 +29,47 @@ export const AiSidebar = ({ editor, activeTool, onChangeActiveTool }: AiSidebarP
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (shouldBlock) return triggerPaywall();
+    // Skip paywall in demo mode (when no auth)
+    const isDemo = window.location.pathname.includes('/demo');
+    if (!isDemo && shouldBlock) return triggerPaywall();
 
+    console.log('🎨 Generating image with prompt:', prompt);
+    
     generateImage(
       { prompt },
       {
-        onSuccess: ({ data }) => {
-          editor?.addImage(data);
-          setPrompt('');
+        onSuccess: (response) => {
+          console.log('✅ Image generated successfully:', response);
+          const imageUrl = (response as any)?.data;
+          if (imageUrl) {
+            editor?.addImage(imageUrl);
+            setPrompt('');
+            toast.success('Image generated successfully!');
+          } else {
+            console.error('No image URL in response');
+            toast.error('Failed to get image URL');
+          }
         },
-        onError: (error) => {
-          console.error(error);
-          toast.error('Something went wrong!');
+        onError: (error: any) => {
+          console.error('❌ Image generation failed:', error);
+          
+          // Parse error message for better user feedback
+          let errorMessage = 'Failed to generate image. Please try again.';
+          
+          if (error?.response) {
+            const errorData = error.response;
+            if (errorData.error) {
+              if (errorData.error.includes('quota')) {
+                errorMessage = '💳 OpenAI quota exceeded. Please check your billing settings.';
+              } else if (errorData.error.includes('API key')) {
+                errorMessage = '🔑 OpenAI API key issue. Please check your configuration.';
+              } else {
+                errorMessage = `❌ ${errorData.error}`;
+              }
+            }
+          }
+          
+          toast.error(errorMessage);
         },
       },
     );
@@ -48,7 +77,10 @@ export const AiSidebar = ({ editor, activeTool, onChangeActiveTool }: AiSidebarP
 
   return (
     <aside className={cn('relative z-40 flex h-full w-[360px] flex-col border bg-white', activeTool === 'ai' ? 'visible' : 'hidden')}>
-      <ToolSidebarHeader title="AI" description="Generate an image using AI." />
+      <ToolSidebarHeader 
+        title="AI Image Generator" 
+        description={`Generate images using ${process.env.NEXT_PUBLIC_OPENAI_ENABLED === 'true' ? 'OpenAI DALL-E 3' : 'AI technology'}.`} 
+      />
 
       <ScrollArea>
         <form className="space-y-6 p-4" onSubmit={onSubmit}>
@@ -56,7 +88,7 @@ export const AiSidebar = ({ editor, activeTool, onChangeActiveTool }: AiSidebarP
             disabled={isGeneratingImage}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder="An astronaut riding a horse on mars, hd, dramatic lighting..."
+            placeholder="A majestic lion in a golden savanna at sunset, photorealistic, high detail..."
             cols={30}
             rows={10}
             required

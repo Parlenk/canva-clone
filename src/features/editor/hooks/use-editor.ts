@@ -24,6 +24,7 @@ import {
   TRIANGLE_OPTIONS,
 } from '@/features/editor/types';
 import { createFilter, downloadFile, isTextType, transformText } from '@/features/editor/utils';
+import { generateAIResizeInstructions, extractCanvasObjects } from '@/features/editor/services/ai-resize';
 
 import { useAutoResize } from './use-auto-resize';
 import { useCanvasEvents } from './use-canvas-events';
@@ -55,9 +56,27 @@ const buildEditor = ({
   selectedObjects,
 }: BuildEditorProps): Editor => {
   const addToCanvas = (object: fabric.Object) => {
-    center(object);
-    canvas.add(object);
-    canvas.setActiveObject(object);
+    console.log('=== addToCanvas called ===');
+    console.log('Object type:', object.type);
+    console.log('Object dimensions:', { width: object.width, height: object.height });
+    console.log('Canvas objects before add:', canvas.getObjects().length);
+    
+    try {
+      center(object);
+      console.log('Object centered at:', { left: object.left, top: object.top });
+      
+      canvas.add(object);
+      console.log('Object added to canvas');
+      console.log('Canvas objects after add:', canvas.getObjects().length);
+      
+      canvas.setActiveObject(object);
+      console.log('Object set as active');
+      
+      canvas.renderAll();
+      console.log('Canvas rendered');
+    } catch (error) {
+      console.error('❌ Error in addToCanvas:', error);
+    }
   };
 
   const generateSaveOptions = () => {
@@ -127,13 +146,27 @@ const buildEditor = ({
   };
 
   const center = (object: fabric.Object) => {
-    const workspace = getWorkspace();
-    const centerPoint = workspace?.getCenterPoint();
-
-    if (!centerPoint) return;
-
-    // @ts-ignore _centerObject method types aren't added.
-    canvas._centerObject(object, centerPoint);
+    // Center object in the visible canvas viewport
+    const canvasCenter = canvas.getCenter();
+    
+    // Transform the center point to account for zoom and pan
+    const vpt = canvas.viewportTransform;
+    if (vpt) {
+      const centerX = (canvasCenter.left - vpt[4]) / vpt[0];
+      const centerY = (canvasCenter.top - vpt[5]) / vpt[3];
+      
+      object.set({
+        left: centerX,
+        top: centerY,
+      });
+    } else {
+      object.set({
+        left: canvasCenter.left,
+        top: canvasCenter.top,
+      });
+    }
+    
+    object.setCoords();
   };
 
   return {
@@ -151,7 +184,7 @@ const buildEditor = ({
       zoomRatio += 0.05;
 
       const center = canvas.getCenter();
-      canvas.zoomToPoint(new fabric.Point(center.left, center.top), zoomRatio > 0.8 ? 0.8 : zoomRatio);
+      canvas.zoomToPoint(new fabric.Point(center.left, center.top), zoomRatio > 2 ? 2 : zoomRatio);
     },
     zoomOut: () => {
       let zoomRatio = canvas.getZoom();
@@ -161,12 +194,83 @@ const buildEditor = ({
       canvas.zoomToPoint(new fabric.Point(center.left, center.top), zoomRatio < 0.2 ? 0.2 : zoomRatio);
     },
     changeSize: (size: { width: number; height: number }) => {
+      console.log('=== changeSize function called ===');
+      console.log('Requested size:', size);
+      
       const workspace = getWorkspace();
+      console.log('Workspace found:', !!workspace);
+      
+      if (workspace) {
+        console.log('Current workspace size:', { width: workspace.width, height: workspace.height });
+        workspace.set(size);
+        workspace.setCoords(); // Force coordinate update
+        canvas.renderAll(); // Force re-render
+        console.log('Workspace resized, calling autoZoom...');
+        autoZoom();
+        save();
+        console.log('=== changeSize complete ===');
+      } else {
+        console.error('No workspace found! Cannot resize.');
+      }
+    },
+    aiPoweredResize: async (currentSize: { width: number; height: number }, newSize: { width: number; height: number }) => {
+      console.log('=== AI-Powered Resize Starting ===');
+      console.log('Current size:', currentSize);
+      console.log('New size:', newSize);
 
-      workspace?.set(size);
-      autoZoom();
+      try {
+        // First, resize the workspace
+        const workspace = getWorkspace();
+        if (!workspace) {
+          console.error('No workspace found!');
+          return;
+        }
 
-      save();
+        // Extract current objects for AI analysis
+        const canvasObjects = extractCanvasObjects(canvas);
+        console.log('Extracted objects for AI analysis:', canvasObjects);
+
+        // Get AI instructions for object placement
+        console.log('Requesting AI resize instructions...');
+        const instructions = await generateAIResizeInstructions(currentSize, newSize, canvasObjects, canvas);
+        console.log('Received AI instructions:', instructions);
+
+        // Resize workspace first
+        workspace.set(newSize);
+        workspace.setCoords();
+
+        // Apply AI instructions to each object
+        const objects = canvas.getObjects().filter(obj => obj.name !== 'clip');
+        objects.forEach((obj, index) => {
+          const instruction = instructions.objects.find(inst => inst.id === `obj_${index}`);
+          if (instruction) {
+            obj.set({
+              left: instruction.left,
+              top: instruction.top,
+              scaleX: instruction.scaleX,
+              scaleY: instruction.scaleY,
+            });
+            obj.setCoords();
+          }
+        });
+
+        canvas.renderAll();
+        autoZoom();
+        save();
+        console.log('=== AI-Powered Resize Complete ===');
+      } catch (error) {
+        console.error('AI-Powered resize failed:', error);
+        // Fallback to basic resize
+        console.log('Falling back to basic resize...');
+        const fallbackWorkspace = getWorkspace();
+        if (fallbackWorkspace) {
+          fallbackWorkspace.set(newSize);
+          fallbackWorkspace.setCoords();
+          canvas.renderAll();
+          autoZoom();
+          save();
+        }
+      }
     },
     changeBackground: (background: string) => {
       const workspace = getWorkspace();
@@ -208,20 +312,75 @@ const buildEditor = ({
       });
     },
     addImage: (imageUrl) => {
-      fabric.Image.fromURL(
-        imageUrl,
-        (image) => {
-          const workspace = getWorkspace();
+      console.log('=== addImage called ===');
+      console.log('Image URL length:', imageUrl?.length);
+      console.log('Canvas available:', !!canvas);
+      console.log('Image URL preview:', imageUrl?.substring(0, 50) + '...');
+      
+      try {
+        fabric.Image.fromURL(
+          imageUrl,
+          (image) => {
+            console.log('=== fabric.Image.fromURL callback ===');
+            console.log('Image object created:', !!image);
+            
+            if (!image) {
+              console.error('❌ fabric.Image.fromURL failed to create image');
+              return;
+            }
+            
+            console.log('Image dimensions:', { width: image.width, height: image.height });
+            console.log('Image element:', image.getElement());
+            
+            // Wait for image to fully load before checking dimensions
+            const checkAndAddImage = () => {
+              const element = image.getElement() as HTMLImageElement;
+              const imageWidth = image.width || element?.naturalWidth || 1;
+              const imageHeight = image.height || element?.naturalHeight || 1;
+              
+              console.log('Final image size check:', { imageWidth, imageHeight });
+              
+              if (!imageWidth || !imageHeight || imageWidth === 1 || imageHeight === 1) {
+                console.error('❌ Image has invalid dimensions, retrying in 100ms...');
+                setTimeout(checkAndAddImage, 100);
+                return;
+              }
+              
+              // Scale image to a reasonable size (max 400px width/height)
+              const maxSize = 400;
+              
+              console.log('Original image size:', { imageWidth, imageHeight });
+              
+              if (imageWidth > maxSize || imageHeight > maxSize) {
+                const scale = Math.min(maxSize / imageWidth, maxSize / imageHeight);
+                console.log('Scaling image by factor:', scale);
+                image.scale(scale);
+              }
 
-          image.scaleToWidth(workspace?.width || 0);
-          image.scaleToHeight(workspace?.height || 0);
-
-          addToCanvas(image);
-        },
-        {
-          crossOrigin: 'anonymous',
-        },
-      );
+              console.log('Adding image to canvas...');
+              try {
+                addToCanvas(image);
+                console.log('✅ Image added to canvas successfully');
+                
+                // Manually trigger save to ensure persistence
+                setTimeout(() => {
+                  save();
+                  console.log('Image save triggered');
+                }, 100);
+              } catch (error) {
+                console.error('❌ Error adding image to canvas:', error);
+              }
+            };
+            
+            // Start the dimension check
+            checkAndAddImage();
+          },
+          // Don't use crossOrigin for data URLs, only for external URLs
+          imageUrl.startsWith('data:') ? {} : { crossOrigin: 'anonymous' },
+        );
+      } catch (error) {
+        console.error('❌ Error in fabric.Image.fromURL:', error);
+      }
     },
     delete: () => {
       canvas.getActiveObjects().forEach((object) => canvas.remove(object));

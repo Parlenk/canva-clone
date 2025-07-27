@@ -1,12 +1,12 @@
 import { createId } from '@paralleldrive/cuid2';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2, Upload } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRef } from 'react';
 
+import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { type ActiveTool, type Editor } from '@/features/editor/types';
-import { useGetImages } from '@/features/images/api/use-get-images';
-import { UploadButton } from '@/lib/uploadthing';
 import { cn } from '@/lib/utils';
 
 import { ToolSidebarClose } from './tool-sidebar-close';
@@ -19,79 +19,84 @@ interface ImageSidebarProps {
 }
 
 export const ImageSidebar = ({ editor, activeTool, onChangeActiveTool }: ImageSidebarProps) => {
-  const { data, isLoading, isError } = useGetImages();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onClose = () => onChangeActiveTool('select');
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('=== Image Upload Started ===');
+    const file = event.target.files?.[0];
+    console.log('File selected:', file?.name, file?.type, file?.size);
+    
+    if (file && editor) {
+      console.log('Editor available:', !!editor);
+      console.log('Canvas available:', !!editor.canvas);
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        console.log('FileReader onload triggered');
+        const result = e.target?.result as string;
+        console.log('Data URL created, length:', result?.length);
+        
+        if (result) {
+          console.log('Calling editor.addImage with data URL...');
+          try {
+            editor.addImage(result);
+            console.log('✅ editor.addImage called successfully');
+          } catch (error) {
+            console.error('❌ Error calling editor.addImage:', error);
+          }
+        } else {
+          console.error('❌ No result from FileReader');
+        }
+      };
+      
+      reader.onerror = (error) => {
+        console.error('❌ FileReader error:', error);
+      };
+      
+      console.log('Starting to read file as data URL...');
+      reader.readAsDataURL(file);
+    } else {
+      console.error('❌ Missing file or editor:', { file: !!file, editor: !!editor });
+    }
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
 
   return (
     <aside className={cn('relative z-40 flex h-full w-[360px] flex-col border bg-white', activeTool === 'images' ? 'visible' : 'hidden')}>
       <ToolSidebarHeader title="Images" description="Add images to your canvas." />
 
       <div className="border-b p-4">
-        <UploadButton
-          appearance={{
-            button: 'w-full text-sm font-medium',
-            allowedContent: 'hidden',
-          }}
-          onBeforeUploadBegin={(files) => {
-            return files.map((f) => {
-              const fileExt = f.name.split('.').at(-1) ?? 'png';
-              const fileName = `${createId()}.${fileExt}`;
-
-              return new File([f], fileName, {
-                type: f.type,
-              });
-            });
-          }}
-          content={{
-            button: 'Upload image',
-          }}
-          endpoint="imageUploader"
-          onClientUploadComplete={(res) => {
-            editor?.addImage(res[0].url);
-          }}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileUpload}
+          className="hidden"
         />
+        <Button 
+          onClick={handleUploadClick}
+          className="w-full"
+          variant="default"
+        >
+          <Upload className="mr-2 h-4 w-4" />
+          Upload Image
+        </Button>
       </div>
 
-      {isLoading && (
-        <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
+      <div className="flex flex-1 flex-col items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground mb-2">Demo Mode</p>
+          <p className="text-xs text-muted-foreground">
+            Upload your own images using the button above.
+            Stock images require API configuration.
+          </p>
         </div>
-      )}
-
-      {isError && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-y-4">
-          <AlertTriangle className="size-4 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">Failed to fetch images.</p>
-        </div>
-      )}
-
-      <ScrollArea>
-        <div className="p-4">
-          <div className="grid grid-cols-2 gap-4">
-            {data &&
-              data.map((image) => {
-                return (
-                  <button
-                    key={image.id}
-                    onClick={() => editor?.addImage(image.urls.regular)}
-                    className="group relative h-[100px] w-full overflow-hidden rounded-sm border bg-muted transition hover:opacity-75"
-                  >
-                    <Image fill src={image.urls.small} alt={image.alt_description || 'Image from unsplash'} className="object-cover" />
-
-                    <Link
-                      href={image.links.html}
-                      target="_blank"
-                      className="absolute bottom-0 left-0 w-full truncate bg-black/50 p-1 text-left text-[10px] text-white opacity-0 hover:underline group-hover:opacity-100"
-                    >
-                      {image.user.name}
-                    </Link>
-                  </button>
-                );
-              })}
-          </div>
-        </div>
-      </ScrollArea>
+      </div>
 
       <ToolSidebarClose onClick={onClose} />
     </aside>

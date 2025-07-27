@@ -1,0 +1,143 @@
+import OpenAI from 'openai';
+
+interface ObjectPlacement {
+  id: string;
+  type: 'text' | 'image' | 'shape' | 'decoration';
+  description: string;
+  newPosition: {
+    x: number;
+    y: number;
+    scale: number;
+  };
+  reasoning?: string;
+}
+
+interface CanvasAnalysis {
+  objects: ObjectPlacement[];
+  layoutStrategy?: string;
+  designPrinciples?: string;
+}
+
+export class OpenAIVisionService {
+  private openai: OpenAI;
+
+  constructor(apiKey: string) {
+    this.openai = new OpenAI({ 
+      apiKey,
+      dangerouslyAllowBrowser: true // For client-side usage
+    });
+  }
+
+  /**
+   * Analyzes canvas content using OpenAI vision API
+   */
+  async analyzeCanvas(
+    canvasImageBase64: string,
+    currentSize: { width: number; height: number },
+    targetSize: { width: number; height: number }
+  ): Promise<CanvasAnalysis> {
+    try {
+      console.log('Analyzing canvas with OpenAI Vision API...');
+      console.log('Current size:', currentSize, 'Target size:', targetSize);
+
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-4-vision-preview",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `User wants to resize this canvas from ${currentSize.width}x${currentSize.height} to ${targetSize.width}x${targetSize.height}.
+
+TASK: Detect all objects and place them on the new canvas size. Make it fit, not awkward and balanced. Try to fill all the space efficiently.
+
+Please:
+1. Identify each visual object (text, images, shapes, etc.)
+2. Determine optimal size and position for each object in the new canvas
+3. Ensure the layout looks balanced and professional
+4. Make good use of the available space
+5. Keep important elements prominent and readable
+
+Provide specific positioning instructions in JSON format:
+{
+  "objects": [
+    {
+      "id": "obj1",
+      "type": "text|image|shape|decoration",
+      "description": "what this object is",
+      "newPosition": {
+        "x": 50,
+        "y": 30,
+        "scale": 0.8
+      },
+      "reasoning": "why placed here"
+    }
+  ],
+  "layoutStrategy": "how you arranged the objects",
+  "designPrinciples": "what design principles you applied"
+}
+
+Focus on making the design look professional and well-balanced in the new canvas size.`
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: `data:image/png;base64,${canvasImageBase64}`
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.1
+      });
+
+      const content = response.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response from OpenAI');
+      }
+
+      // Extract JSON from response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Invalid JSON response from OpenAI');
+      }
+
+      const analysis: CanvasAnalysis = JSON.parse(jsonMatch[0]);
+      console.log('OpenAI Analysis Result:', analysis);
+      
+      return analysis;
+
+    } catch (error) {
+      console.error('OpenAI Vision API error:', error);
+      console.log('Using fallback analysis - API call failed');
+      
+      // Return a fallback that will trigger basic resize
+      throw new Error('OpenAI API failed - falling back to basic resize');
+    }
+  }
+
+  /**
+   * Captures canvas as base64 image for analysis
+   */
+  async captureCanvas(canvas: fabric.Canvas): Promise<string> {
+    try {
+      // Get the fabric canvas as data URL
+      const fabricDataURL = canvas.toDataURL({
+        format: 'png',
+        quality: 0.8,
+        multiplier: 1
+      });
+
+      // Extract base64 part (remove data:image/png;base64, prefix)
+      const base64 = fabricDataURL.split(',')[1];
+      
+      return base64;
+
+    } catch (error) {
+      console.error('Canvas capture error:', error);
+      throw error;
+    }
+  }
+}

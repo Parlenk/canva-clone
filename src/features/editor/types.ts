@@ -114,7 +114,7 @@ export const TEXT_OPTIONS = {
 };
 
 export const CIRCLE_OPTIONS = {
-  radius: 225,
+  radius: 50,
   left: 100,
   top: 100,
   fill: FILL_COLOR,
@@ -128,8 +128,8 @@ export const RECTANGLE_OPTIONS = {
   fill: FILL_COLOR,
   stroke: STROKE_COLOR,
   strokeWidth: STROKE_WIDTH,
-  width: 400,
-  height: 400,
+  width: 120,
+  height: 120,
   angle: 0,
 };
 
@@ -139,8 +139,8 @@ export const TRIANGLE_OPTIONS = {
   fill: FILL_COLOR,
   stroke: STROKE_COLOR,
   strokeWidth: STROKE_WIDTH,
-  width: 400,
-  height: 400,
+  width: 120,
+  height: 120,
   angle: 0,
 };
 
@@ -150,8 +150,8 @@ export const DIAMOND_OPTIONS = {
   fill: FILL_COLOR,
   stroke: STROKE_COLOR,
   strokeWidth: STROKE_WIDTH,
-  width: 600,
-  height: 600,
+  width: 120,
+  height: 120,
   angle: 0,
 };
 
@@ -200,6 +200,7 @@ export interface Editor {
   zoomOut: () => void;
   changeBackground: (background: string) => void;
   changeSize: (size: { width: number; height: number }) => void;
+  aiPoweredResize: (currentSize: { width: number; height: number }, newSize: { width: number; height: number }) => Promise<void>;
   enableDrawingMode: () => void;
   disableDrawingMode: () => void;
   onUndo: () => void;
