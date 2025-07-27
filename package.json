@@ -132,7 +132,7 @@
     "unsplash-js": "^7.0.19",
     "uploadthing": "^7.1.0",
     "use-file-picker": "^2.1.2",
-    "zod": "^4.0.5",
+    "zod": "^3.23.8",
     "zustand": "^5.0.0"
   },
   "devDependencies": {
@@ -145,7 +145,7 @@
     "@types/node": "^24",
     "@types/react": "^18",
     "@types/react-color": "^3.0.12",
-    "@types/react-dom": "^19",
+    "@types/react-dom": "^18",
     "dotenv": "^17.0.0",
     "drizzle-kit": "^0.31.0",
     "eslint": "^9",
