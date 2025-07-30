@@ -202,8 +202,8 @@ RESPOND in this exact JSON format with positions for ALL elements:
         // Ensure minimum and maximum scale limits
         const minScale = 0.4;
         const maxScale = 2.0;
-        const safeScaleX = Math.max(minScale, Math.min(maxScale, placement.scaleX));
-        const safeScaleY = Math.max(minScale, Math.min(maxScale, placement.scaleY));
+        let safeScaleX = Math.max(minScale, Math.min(maxScale, placement.scaleX));
+        let safeScaleY = Math.max(minScale, Math.min(maxScale, placement.scaleY));
         
         // Calculate final size after safe scaling
         const safeWidth = originalObj.width * safeScaleX;
