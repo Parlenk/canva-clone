@@ -1,0 +1,339 @@
+import { ImageAnnotatorClient } from '@google-cloud/vision';
+
+interface CanvasAnalysis {
+  layout: string;
+  elements: Array<{
+    type: string;
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+    content?: string;
+  }>;
+  designPrinciples: string[];
+  colorScheme: string;
+  overallStyle: string;
+}
+
+interface ResizeAnalysis {
+  strategy: string;
+  placements: Array<{
+    id: string;
+    left: number;
+    top: number;
+    scaleX: number;
+    scaleY: number;
+  }>;
+  designRationale: string;
+  appliedPrinciples: string[];
+}
+
+export class GoogleVisionService {
+  private client: ImageAnnotatorClient | null = null;
+
+  constructor() {
+    if (!process.env.GOOGLE_CLOUD_PROJECT_ID || !process.env.GOOGLE_CLOUD_PRIVATE_KEY) {
+      throw new Error('Google Cloud credentials not configured');
+    }
+
+    // Initialize Google Vision client
+    this.client = new ImageAnnotatorClient({
+      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+      credentials: {
+        client_email: process.env.GOOGLE_CLOUD_CLIENT_EMAIL || '',
+        private_key: process.env.GOOGLE_CLOUD_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      },
+    });
+
+    console.log('🔍 Google Vision Service initialized');
+  }
+
+  async analyzeCanvasLayout(imageBase64: string): Promise<CanvasAnalysis> {
+    try {
+      console.log('📸 Analyzing canvas with Google Vision API...');
+
+      if (!this.client) {
+        throw new Error('Google Vision client not initialized');
+      }
+
+      // Convert base64 to buffer
+      const imageBuffer = Buffer.from(imageBase64, 'base64');
+
+      // Perform text detection and object localization
+      const [textResult] = await this.client.textDetection({
+        image: { content: imageBuffer },
+      });
+
+      const [objectResult] = await this.client.objectLocalization({
+        image: { content: imageBuffer },
+      });
+
+      const [labelResult] = await this.client.labelDetection({
+        image: { content: imageBuffer },
+      });
+
+      // Process text annotations
+      const textAnnotations = textResult.textAnnotations || [];
+      const textElements = textAnnotations.slice(1).map((annotation, index) => ({
+        type: 'text',
+        position: {
+          x: annotation.boundingPoly?.vertices?.[0]?.x || 0,
+          y: annotation.boundingPoly?.vertices?.[0]?.y || 0,
+        },
+        size: {
+          width: this.calculateWidth(annotation.boundingPoly?.vertices || []),
+          height: this.calculateHeight(annotation.boundingPoly?.vertices || []),
+        },
+        content: annotation.description || '',
+      }));
+
+      // Process object annotations
+      const objectAnnotations = objectResult.localizedObjects || [];
+      const objectElements = objectAnnotations.map((obj, index) => ({
+        type: obj.name?.toLowerCase() || 'object',
+        position: {
+          x: (obj.boundingPoly?.normalizedVertices?.[0]?.x || 0) * 800, // Assume 800px width
+          y: (obj.boundingPoly?.normalizedVertices?.[0]?.y || 0) * 600, // Assume 600px height
+        },
+        size: {
+          width: this.calculateNormalizedWidth(obj.boundingPoly?.normalizedVertices || []) * 800,
+          height: this.calculateNormalizedHeight(obj.boundingPoly?.normalizedVertices || []) * 600,
+        },
+        content: obj.name || '',
+      }));
+
+      // Process labels for style analysis
+      const labels = labelResult.labelAnnotations || [];
+      const styleLabels = labels.slice(0, 5).map(label => label.description || '');
+
+      // Analyze layout
+      const layout = this.analyzeLayout([...textElements, ...objectElements]);
+      const colorScheme = this.inferColorScheme(styleLabels);
+      const designPrinciples = this.inferDesignPrinciples([...textElements, ...objectElements]);
+
+      const analysis: CanvasAnalysis = {
+        layout,
+        elements: [...textElements, ...objectElements],
+        designPrinciples,
+        colorScheme,
+        overallStyle: styleLabels.join(', '),
+      };
+
+      console.log('✅ Google Vision analysis completed:', analysis);
+      return analysis;
+
+    } catch (error) {
+      console.error('❌ Google Vision analysis failed:', error);
+      throw error;
+    }
+  }
+
+  async generateSmartResize(
+    canvasAnalysis: CanvasAnalysis,
+    currentSize: { width: number; height: number },
+    newSize: { width: number; height: number },
+    objectsData: Array<{
+      id: string;
+      type: string;
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+      scaleX: number;
+      scaleY: number;
+    }>
+  ): Promise<ResizeAnalysis> {
+    try {
+      console.log('🧠 Generating Google Vision-powered resize...');
+
+      // Determine resize strategy based on analysis
+      const isOrientationChange = 
+        (currentSize.width > currentSize.height) !== (newSize.width > newSize.height);
+
+      let strategy: string;
+      let placements: Array<{
+        id: string;
+        left: number;
+        top: number;
+        scaleX: number;
+        scaleY: number;
+      }> = [];
+
+      if (isOrientationChange) {
+        strategy = 'orientation-adaptive';
+        placements = this.generateOrientationAdaptivePlacements(
+          objectsData,
+          currentSize,
+          newSize,
+          canvasAnalysis
+        );
+      } else {
+        strategy = 'proportional-smart';
+        placements = this.generateProportionalPlacements(
+          objectsData,
+          currentSize,
+          newSize,
+          canvasAnalysis
+        );
+      }
+
+      const designRationale = this.generateDesignRationale(strategy, canvasAnalysis, currentSize, newSize);
+      const appliedPrinciples = this.getAppliedPrinciples(strategy, canvasAnalysis);
+
+      const resizeAnalysis: ResizeAnalysis = {
+        strategy,
+        placements,
+        designRationale,
+        appliedPrinciples,
+      };
+
+      console.log('✅ Google Vision resize analysis completed:', resizeAnalysis);
+      return resizeAnalysis;
+
+    } catch (error) {
+      console.error('❌ Google Vision resize generation failed:', error);
+      throw error;
+    }
+  }
+
+  private calculateWidth(vertices: Array<{ x?: number; y?: number }>): number {
+    if (vertices.length < 2) return 100;
+    const minX = Math.min(...vertices.map(v => v.x || 0));
+    const maxX = Math.max(...vertices.map(v => v.x || 0));
+    return maxX - minX;
+  }
+
+  private calculateHeight(vertices: Array<{ x?: number; y?: number }>): number {
+    if (vertices.length < 2) return 50;
+    const minY = Math.min(...vertices.map(v => v.y || 0));
+    const maxY = Math.max(...vertices.map(v => v.y || 0));
+    return maxY - minY;
+  }
+
+  private calculateNormalizedWidth(vertices: Array<{ x?: number; y?: number }>): number {
+    if (vertices.length < 2) return 0.1;
+    const minX = Math.min(...vertices.map(v => v.x || 0));
+    const maxX = Math.max(...vertices.map(v => v.x || 0));
+    return maxX - minX;
+  }
+
+  private calculateNormalizedHeight(vertices: Array<{ x?: number; y?: number }>): number {
+    if (vertices.length < 2) return 0.1;
+    const minY = Math.min(...vertices.map(v => v.y || 0));
+    const maxY = Math.max(...vertices.map(v => v.y || 0));
+    return maxY - minY;
+  }
+
+  private analyzeLayout(elements: Array<{ position: { x: number; y: number } }>): string {
+    if (elements.length === 0) return 'empty';
+    if (elements.length === 1) return 'centered';
+
+    const avgX = elements.reduce((sum, el) => sum + el.position.x, 0) / elements.length;
+    const avgY = elements.reduce((sum, el) => sum + el.position.y, 0) / elements.length;
+
+    if (avgX < 200) return 'left-aligned';
+    if (avgX > 600) return 'right-aligned';
+    if (avgY < 150) return 'top-aligned';
+    if (avgY > 450) return 'bottom-aligned';
+    return 'distributed';
+  }
+
+  private inferColorScheme(labels: string[]): string {
+    const colorKeywords = ['colorful', 'monochrome', 'vibrant', 'pastel', 'dark', 'light'];
+    const foundColor = labels.find(label => 
+      colorKeywords.some(keyword => label.toLowerCase().includes(keyword))
+    );
+    return foundColor || 'neutral';
+  }
+
+  private inferDesignPrinciples(elements: Array<any>): string[] {
+    const principles = [];
+    
+    if (elements.length > 3) principles.push('hierarchy');
+    if (elements.some(el => el.type === 'text')) principles.push('typography');
+    if (elements.length > 1) principles.push('balance');
+    principles.push('proportion');
+    
+    return principles;
+  }
+
+  private generateOrientationAdaptivePlacements(
+    objects: Array<any>,
+    currentSize: { width: number; height: number },
+    newSize: { width: number; height: number },
+    analysis: CanvasAnalysis
+  ): Array<{ id: string; left: number; top: number; scaleX: number; scaleY: number }> {
+    const scaleX = newSize.width / currentSize.width;
+    const scaleY = newSize.height / currentSize.height;
+    const conservativeScale = Math.min(scaleX, scaleY) * 0.8;
+
+    return objects.map((obj, index) => {
+      const isPortrait = newSize.height > newSize.width;
+      
+      if (isPortrait) {
+        // Stack vertically for portrait
+        return {
+          id: obj.id,
+          left: newSize.width * 0.1,
+          top: (newSize.height / objects.length) * index + 50,
+          scaleX: conservativeScale,
+          scaleY: conservativeScale,
+        };
+      } else {
+        // Distribute horizontally for landscape
+        return {
+          id: obj.id,
+          left: (newSize.width / objects.length) * index + 50,
+          top: newSize.height * 0.2,
+          scaleX: conservativeScale,
+          scaleY: conservativeScale,
+        };
+      }
+    });
+  }
+
+  private generateProportionalPlacements(
+    objects: Array<any>,
+    currentSize: { width: number; height: number },
+    newSize: { width: number; height: number },
+    analysis: CanvasAnalysis
+  ): Array<{ id: string; left: number; top: number; scaleX: number; scaleY: number }> {
+    const scaleX = newSize.width / currentSize.width;
+    const scaleY = newSize.height / currentSize.height;
+    const uniformScale = Math.min(scaleX, scaleY) * 0.9;
+
+    return objects.map(obj => ({
+      id: obj.id,
+      left: (obj.left / currentSize.width) * newSize.width,
+      top: (obj.top / currentSize.height) * newSize.height,
+      scaleX: uniformScale,
+      scaleY: uniformScale,
+    }));
+  }
+
+  private generateDesignRationale(
+    strategy: string,
+    analysis: CanvasAnalysis,
+    currentSize: { width: number; height: number },
+    newSize: { width: number; height: number }
+  ): string {
+    const isOrientationChange = 
+      (currentSize.width > currentSize.height) !== (newSize.width > newSize.height);
+
+    if (isOrientationChange) {
+      return `Applied ${strategy} strategy for orientation change from ${currentSize.width}x${currentSize.height} to ${newSize.width}x${newSize.height}. Detected ${analysis.layout} layout with ${analysis.elements.length} elements. Reorganized for optimal ${newSize.height > newSize.width ? 'portrait' : 'landscape'} viewing.`;
+    }
+
+    return `Applied ${strategy} strategy maintaining the original ${analysis.layout} layout. Scaled ${analysis.elements.length} elements proportionally while preserving design hierarchy and ${analysis.colorScheme} color scheme.`;
+  }
+
+  private getAppliedPrinciples(strategy: string, analysis: CanvasAnalysis): string[] {
+    const basePrinciples = [...analysis.designPrinciples];
+    
+    if (strategy === 'orientation-adaptive') {
+      basePrinciples.push('responsive-design', 'adaptive-layout');
+    } else {
+      basePrinciples.push('proportional-scaling', 'consistency');
+    }
+    
+    return basePrinciples;
+  }
+}

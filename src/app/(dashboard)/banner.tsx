@@ -14,7 +14,7 @@ const canvasSizes = [
   { label: 'YouTube Thumbnail', value: '1280x720', width: 1280, height: 720 },
   { label: 'A4 Document', value: '2480x3508', width: 2480, height: 3508 },
   { label: 'Business Card', value: '1050x600', width: 1050, height: 600 },
-  { label: 'Custom Size', value: 'custom', width: 800, height: 600 },
+  { label: 'Custom Size', value: 'custom', width: 400, height: 400 },
 ];
 
 export const Banner = () => {

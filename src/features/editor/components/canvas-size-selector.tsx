@@ -14,13 +14,13 @@ const PRESET_SIZES = [
   { name: 'Business Card', width: 600, height: 400, description: 'Standard business card' },
   { name: 'Flyer', width: 600, height: 800, description: 'Portrait flyer format' },
   { name: 'Banner', width: 1000, height: 300, description: 'Wide banner format' },
-  { name: 'Custom', width: 800, height: 600, description: 'Define your own size' },
+  { name: 'Custom', width: 400, height: 400, description: 'Define your own size' },
 ];
 
 export const CanvasSizeSelector = ({ onCanvasCreate }: CanvasSizeSelectorProps) => {
   const [selectedPreset, setSelectedPreset] = useState(PRESET_SIZES[0]);
-  const [customWidth, setCustomWidth] = useState('800');
-  const [customHeight, setCustomHeight] = useState('600');
+  const [customWidth, setCustomWidth] = useState('400');
+  const [customHeight, setCustomHeight] = useState('400');
 
   const handleCreateCanvas = () => {
     if (selectedPreset.name === 'Custom') {
@@ -90,7 +90,7 @@ export const CanvasSizeSelector = ({ onCanvasCreate }: CanvasSizeSelectorProps) 
                   max="5000"
                   value={customWidth}
                   onChange={(e) => setCustomWidth(e.target.value)}
-                  placeholder="800"
+                  placeholder="400"
                 />
               </div>
               <div>
@@ -102,7 +102,7 @@ export const CanvasSizeSelector = ({ onCanvasCreate }: CanvasSizeSelectorProps) 
                   max="5000"
                   value={customHeight}
                   onChange={(e) => setCustomHeight(e.target.value)}
-                  placeholder="600"
+                  placeholder="400"
                 />
               </div>
             </div>

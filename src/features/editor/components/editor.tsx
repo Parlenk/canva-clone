@@ -9,7 +9,6 @@ import { type ActiveTool, selectionDependentTools } from '@/features/editor/type
 import type { ResponseType } from '@/features/projects/api/use-get-project';
 import { useUpdateProject } from '@/features/projects/api/use-update-project';
 
-import { AiSidebar } from './ai-sidebar';
 import { DrawSidebar } from './draw-sidebar';
 import { FillColorSidebar } from './fill-color-sidebar';
 import { FilterSidebar } from './filter-sidebar';
@@ -113,7 +112,6 @@ export const Editor = ({ initialData }: EditorProps) => {
         <FontSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <ImageSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <FilterSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
-        <AiSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <RemoveBgSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <DrawSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <SettingsSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />

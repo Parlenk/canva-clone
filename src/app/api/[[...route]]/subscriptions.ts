@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 import { db } from '@/db/drizzle';
 import { subscriptions } from '@/db/schema';
 import { checkIsActive } from '@/features/subscriptions/utils';
-import { stripe } from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 
 const app = new Hono()
   .post('/billing', verifyAuth(), async (ctx) => {
@@ -22,6 +22,7 @@ const app = new Hono()
       return ctx.json('No subscription found.', 404);
     }
 
+    const stripe = getStripe();
     const session = await stripe.billingPortal.sessions.create({
       customer: subscription.customerId,
       return_url: process.env.NEXT_PUBLIC_APP_BASE_URL!,
@@ -53,6 +54,7 @@ const app = new Hono()
       return ctx.json('Unauthorized!', 401);
     }
 
+    const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
       success_url: `${process.env.NEXT_PUBLIC_APP_BASE_URL}?success=1`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_BASE_URL}?canceled=1`,
@@ -84,6 +86,7 @@ const app = new Hono()
     let event: Stripe.Event;
 
     try {
+      const stripe = getStripe();
       event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (error) {
       return ctx.json('Invalid signature!', 400);
@@ -94,6 +97,7 @@ const app = new Hono()
     if (!session?.metadata?.userId) return ctx.json(null);
 
     if (event.type === 'checkout.session.completed') {
+      const stripe = getStripe();
       const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
 
       await db.insert(subscriptions).values({
@@ -109,6 +113,7 @@ const app = new Hono()
     }
 
     if (event.type === 'invoice.payment_succeeded') {
+      const stripe = getStripe();
       const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
 
       await db

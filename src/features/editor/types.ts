@@ -88,9 +88,9 @@ export type ActiveTool =
   | 'opacity'
   | 'filter'
   | 'settings'
-  | 'ai'
   | 'remove-bg'
-  | 'templates';
+  | 'templates'
+  | 'cpa-button';
 
 export const FILL_COLOR = 'rgba(0, 0, 0, 1)';
 export const STROKE_COLOR = 'rgba(0, 0, 0, 1)';
@@ -209,6 +209,15 @@ export interface Editor {
   onPaste: () => void;
   changeImageFilter: (effect: (typeof filters)[number]) => void;
   addImage: (imageUrl: string) => void;
+  addCpaButton: (options: {
+    text: string;
+    backgroundColor: string;
+    textColor: string;
+    borderRadius: number;
+    padding: number;
+    fontSize: number;
+    fontWeight: string;
+  }) => void;
   delete: () => void;
   changeOpacity: (opacity: number) => void;
   bringForward: () => void;

@@ -1,5 +1,16 @@
 import Replicate from 'replicate';
 
-export const replicate = new Replicate({
-  auth: process.env.REPLICATE_API_TOKEN,
-});
+let replicateInstance: Replicate | null = null;
+
+export const getReplicate = () => {
+  if (!replicateInstance) {
+    const token = process.env.REPLICATE_API_TOKEN;
+    if (!token) {
+      throw new Error('REPLICATE_API_TOKEN environment variable is not set');
+    }
+    replicateInstance = new Replicate({
+      auth: token,
+    });
+  }
+  return replicateInstance;
+};

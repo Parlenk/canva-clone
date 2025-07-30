@@ -7,7 +7,6 @@ import { useSearchParams } from 'next/navigation';
 import { useEditor } from '@/features/editor/hooks/use-editor';
 import { type ActiveTool, selectionDependentTools } from '@/features/editor/types';
 
-import { AiSidebar } from '@/features/editor/components/ai-sidebar';
 import { DrawSidebar } from '@/features/editor/components/draw-sidebar';
 import { FillColorSidebar } from '@/features/editor/components/fill-color-sidebar';
 import { FilterSidebar } from '@/features/editor/components/filter-sidebar';
@@ -15,6 +14,7 @@ import { FontSidebar } from '@/features/editor/components/font-sidebar';
 import { Footer } from '@/features/editor/components/footer';
 import { ImageSidebar } from '@/features/editor/components/image-sidebar';
 import { Navbar } from '@/features/editor/components/navbar';
+import { CpaButtonSidebar } from '@/features/editor/components/cpa-button-sidebar';
 import { RemoveBgSidebar } from '@/features/editor/components/remove-bg-sidebar';
 import { SettingsSidebar } from '@/features/editor/components/settings-sidebar';
 import { ShapeSidebar } from '@/features/editor/components/shape-sidebar';
@@ -51,20 +51,20 @@ const DemoPage = () => {
   const width = useMemo(() => {
     try {
       const widthParam = searchParams.get('width');
-      return widthParam ? Number(widthParam) : 1080;
+      return widthParam ? Number(widthParam) : 400;
     } catch (error) {
       console.warn('Error parsing width parameter:', error);
-      return 1080;
+      return 400;
     }
   }, [searchParams]);
   
   const height = useMemo(() => {
     try {
       const heightParam = searchParams.get('height');
-      return heightParam ? Number(heightParam) : 1080;
+      return heightParam ? Number(heightParam) : 400;
     } catch (error) {
       console.warn('Error parsing height parameter:', error);
-      return 1080;
+      return 400;
     }
   }, [searchParams]);
   
@@ -161,7 +161,7 @@ const DemoPage = () => {
         onChangeActiveTool={onChangeActiveTool}
       />
 
-      <div className="absolute inset-y-0 left-0 z-[49] flex h-[calc(100%-68px)] w-[100px] flex-col border-r bg-white">
+      <div className="absolute top-[68px] bottom-0 left-0 z-[49] flex w-[100px] flex-col border-r bg-white">
         <Sidebar activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
       </div>
 
@@ -174,18 +174,13 @@ const DemoPage = () => {
             key={JSON.stringify(editor?.canvas.getActiveObject())}
           />
 
-          <div className="flex-1 h-[calc(100%-124px)] bg-gray-900" ref={containerRef}>
-            <canvas ref={canvasRef} />
+          <div className="flex-1 h-[calc(100%-124px)] bg-gray-900 flex items-center justify-center" ref={containerRef}>
+            <canvas ref={canvasRef} style={{ border: '2px solid #444' }} />
           </div>
 
           <Footer editor={editor} />
         </div>
 
-        <AiSidebar
-          editor={editor}
-          activeTool={activeTool}
-          onChangeActiveTool={onChangeActiveTool}
-        />
 
         <FillColorSidebar
           editor={editor}
@@ -260,6 +255,12 @@ const DemoPage = () => {
         />
 
         <RemoveBgSidebar
+          editor={editor}
+          activeTool={activeTool}
+          onChangeActiveTool={onChangeActiveTool}
+        />
+
+        <CpaButtonSidebar
           editor={editor}
           activeTool={activeTool}
           onChangeActiveTool={onChangeActiveTool}

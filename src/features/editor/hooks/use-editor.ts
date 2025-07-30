@@ -259,17 +259,10 @@ const buildEditor = ({
         save();
         console.log('=== AI-Powered Resize Complete ===');
       } catch (error) {
-        console.error('AI-Powered resize failed:', error);
-        // Fallback to basic resize
-        console.log('Falling back to basic resize...');
-        const fallbackWorkspace = getWorkspace();
-        if (fallbackWorkspace) {
-          fallbackWorkspace.set(newSize);
-          fallbackWorkspace.setCoords();
-          canvas.renderAll();
-          autoZoom();
-          save();
-        }
+        console.error('❌ TRUE AI resize failed - NO FALLBACKS ALLOWED');
+        console.error('❌ Error details:', error);
+        // NO FALLBACKS - Show error to user
+        throw new Error(`TRUE AI ONLY MODE: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     },
     changeBackground: (background: string) => {
@@ -380,6 +373,86 @@ const buildEditor = ({
         );
       } catch (error) {
         console.error('❌ Error in fabric.Image.fromURL:', error);
+      }
+    },
+    addCpaButton: (options) => {
+      console.log('=== addCpaButton called ===', options);
+      
+      try {
+        const {
+          text,
+          backgroundColor,
+          textColor,
+          borderRadius,
+          padding,
+          fontSize,
+          fontWeight
+        } = options;
+
+        // Create the button rectangle
+        const buttonWidth = Math.max(text.length * fontSize * 0.6 + padding * 2, 120);
+        const buttonHeight = fontSize + padding * 2;
+
+        const button = new fabric.Rect({
+          left: 100,
+          top: 100,
+          width: buttonWidth,
+          height: buttonHeight,
+          fill: backgroundColor,
+          stroke: 'transparent',
+          strokeWidth: 0,
+          rx: borderRadius,
+          ry: borderRadius,
+          selectable: true,
+          evented: true,
+          name: 'cpa-button-background'
+        });
+
+        // Create the button text
+        const buttonText = new fabric.Textbox(text, {
+          left: 100 + buttonWidth / 2,
+          top: 100 + buttonHeight / 2,
+          width: buttonWidth - padding * 2,
+          height: buttonHeight - padding * 2,
+          fontSize: fontSize,
+          fill: textColor,
+          fontFamily: 'Arial',
+          fontWeight: fontWeight,
+          textAlign: 'center',
+          originX: 'center',
+          originY: 'center',
+          selectable: true,
+          evented: true,
+          name: 'cpa-button-text'
+        });
+
+        // Create a group for the button
+        const buttonGroup = new fabric.Group([button, buttonText], {
+          left: 100,
+          top: 100,
+          selectable: true,
+          evented: true,
+          name: 'cpa-button',
+          data: {
+            type: 'cta-button',
+            text: text,
+            backgroundColor: backgroundColor,
+            textColor: textColor
+          }
+        });
+
+        console.log('Adding CPA button to canvas...', buttonGroup);
+        addToCanvas(buttonGroup);
+        console.log('✅ CPA button added to canvas successfully');
+        
+        // Manually trigger save
+        setTimeout(() => {
+          save();
+          console.log('CPA button save triggered');
+        }, 100);
+        
+      } catch (error) {
+        console.error('❌ Error adding CPA button:', error);
       }
     },
     delete: () => {

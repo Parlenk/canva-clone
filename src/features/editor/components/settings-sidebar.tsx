@@ -28,7 +28,7 @@ export const SettingsSidebar = ({ editor, activeTool, onChangeActiveTool }: Sett
   const [width, setWidth] = useState(initialWidth);
   const [height, setHeight] = useState(initialHeight);
   const [background, setBackground] = useState(initialBackground);
-  const [resizeMethod, setResizeMethod] = useState<'basic' | 'ai-powered'>('basic');
+  const [resizeMethod, setResizeMethod] = useState<'ai-powered'>('ai-powered');
 
   useEffect(() => {
     setWidth(initialWidth);
@@ -62,13 +62,8 @@ export const SettingsSidebar = ({ editor, activeTool, onChangeActiveTool }: Sett
     console.log('Current size:', currentSize);
     console.log('New size:', newSize);
 
-    if (resizeMethod === 'basic') {
-      // Use the existing basic resize
-      if (editor?.changeSize) {
-        editor.changeSize(newSize);
-        console.log('Basic resize applied');
-      }
-    } else if (resizeMethod === 'ai-powered') {
+    // ONLY TRUE AI RESIZE ALLOWED
+    if (resizeMethod === 'ai-powered') {
       // Use AI-powered resize
       console.log('🤖 Applying AI-powered resize with 3-step process...');
       console.log('📐 Step 1: Proportional scaling');
@@ -77,14 +72,10 @@ export const SettingsSidebar = ({ editor, activeTool, onChangeActiveTool }: Sett
       
       if (editor?.aiPoweredResize) {
         await editor.aiPoweredResize(currentSize, newSize);
-        console.log('✅ AI-powered resize completed successfully!');
+        console.log('✅ TRUE AI resize completed successfully!');
       } else {
-        console.error('AI-powered resize not available');
-        // Fallback to basic resize
-        if (editor?.changeSize) {
-          editor.changeSize(newSize);
-          console.log('Fallback to basic resize');
-        }
+        console.error('❌ TRUE AI resize not available - STOPPING');
+        throw new Error('TRUE AI ONLY MODE: AI resize function not available');
       }
     }
   };
@@ -108,31 +99,31 @@ export const SettingsSidebar = ({ editor, activeTool, onChangeActiveTool }: Sett
 
           <div className="space-y-2">
             <Label>Resize Method</Label>
-            <Select value={resizeMethod} onValueChange={(value: 'basic' | 'ai-powered') => setResizeMethod(value)}>
+            <Select value={resizeMethod} onValueChange={(value: 'ai-powered') => setResizeMethod(value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select resize method" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="basic">Basic Resize</SelectItem>
                 <SelectItem value="ai-powered">
-                  AI-Powered Resize 🔧 (Smart Algorithm)
+                  TRUE AI Resize 🤖 (OpenAI Vision) - ONLY OPTION
                 </SelectItem>
               </SelectContent>
             </Select>
             {resizeMethod === 'ai-powered' && (
               <div className="text-xs text-gray-600 mt-1">
-                <span className="text-blue-600">🔧 Smart algorithm - Orientation-aware resize with intelligent content repositioning</span>
+                <span className="text-green-600">🤖 TRUE AI - Uses OpenAI Vision API to analyze your design</span>
                 <div className="text-gray-500 mt-1">
-                  • Detects horizontal ↔ vertical transitions<br/>
-                  • Automatically repositions content for optimal layout<br/>
-                  • Preserves text readability and visual hierarchy
+                  • GPT-4 Turbo analyzes your canvas visually<br/>
+                  • Understands design intent and visual hierarchy<br/>
+                  • Creates professional layouts for new dimensions<br/>
+                  • Real AI processing (takes a few seconds)
                 </div>
               </div>
             )}
           </div>
 
           <Button type="submit" className="w-full">
-            {resizeMethod === 'ai-powered' ? 'AI Resize' : 'Resize'}
+            {resizeMethod === 'ai-powered' ? 'TRUE AI Resize 🤖' : 'Resize'}
           </Button>
         </form>
 

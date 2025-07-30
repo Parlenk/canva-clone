@@ -1,6 +1,6 @@
 'use client';
 
-import { ImageIcon, LayoutTemplate, Pencil, Settings, Shapes, Sparkles, Type } from 'lucide-react';
+import { ImageIcon, LayoutTemplate, Pencil, Settings, Shapes, Type, MousePointer2 } from 'lucide-react';
 
 import type { ActiveTool } from '@/features/editor/types';
 
@@ -30,7 +30,12 @@ export const Sidebar = ({ activeTool, onChangeActiveTool }: SidebarProps) => {
 
         <SidebarItem icon={Pencil} label="Draw" isActive={activeTool === 'draw'} onClick={() => onChangeActiveTool('draw')} />
 
-        <SidebarItem icon={Sparkles} label="AI" isActive={activeTool === 'ai'} onClick={() => onChangeActiveTool('ai')} />
+        <SidebarItem 
+          icon={MousePointer2} 
+          label="CPA Button" 
+          isActive={activeTool === 'cpa-button'} 
+          onClick={() => onChangeActiveTool('cpa-button')} 
+        />
 
         <SidebarItem icon={Settings} label="Settings" isActive={activeTool === 'settings'} onClick={() => onChangeActiveTool('settings')} />
       </ul>
