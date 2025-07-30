@@ -82,49 +82,52 @@ export class OpenAIVisionService {
             content: [
               {
                 type: "text",
-                text: `You are a professional graphic designer. Here is a canvas with size ${currentSize.width}×${currentSize.height} containing these layers:
+                text: `IMPORTANT: You are looking at a design canvas. The WHITE RECTANGULAR AREA in the image is the ONLY space where design elements should be placed.
 
-${layersList}
+CURRENT SITUATION:
+- Current white canvas: ${currentSize.width}×${currentSize.height} pixels
+- Elements on canvas: ${layersList}
 
-DESIGN CHALLENGE: Resize this design to fit perfectly in a new ${newSize.width}×${newSize.height} white canvas.
+TASK: Resize all elements to fit in a NEW white canvas of ${newSize.width}×${newSize.height} pixels.
 
-CRITICAL REQUIREMENTS:
-🎯 ALL ${objectsData.length} LAYERS must be visible within the white canvas boundaries
-🎯 ALL layers must work together as a cohesive, well-designed composition
-🎯 NO layer can be positioned outside the white canvas area
-🎯 The final result must look professionally designed, not randomly placed
+🚨 CRITICAL RULE: ALL ${objectsData.length} elements MUST be placed INSIDE the white rectangular canvas area ONLY.
 
-DESIGN CONSTRAINTS:
-• Canvas boundaries: (0,0) to (${newSize.width},${newSize.height})
-• Minimum 20px margin from all edges for breathing room
-• Each layer must be scaled appropriately (minimum 0.4x, maximum 2.0x)
-• Consider visual hierarchy - important elements should be more prominent
-• Maintain good spacing between layers - no overlapping unless intentional
-• Think about the overall composition flow and balance
+ABSOLUTE REQUIREMENTS:
+1. The white canvas area starts at (0,0) and ends at (${newSize.width},${newSize.height})
+2. EVERY element must have its position AND size fit completely within these boundaries
+3. NO element can extend beyond the white canvas edges
+4. ALL ${objectsData.length} elements must be visible and well-arranged
 
-MATHEMATICAL VALIDATION:
-For each layer at position (left, top) with size (width×height) and scale (scaleX, scaleY):
-✓ left >= 20
-✓ top >= 20  
-✓ left + (width × scaleX) <= ${newSize.width - 20}
-✓ top + (height × scaleY) <= ${newSize.height - 20}
+POSITIONING RULES:
+- Element position (left, top) must be >= 30 (minimum margin)
+- Element position + element size must be <= canvas size - 30 (maximum boundary)
+- For element at (left, top) with original size (width, height) and scale (scaleX, scaleY):
+  → Final width = width × scaleX
+  → Final height = height × scaleY  
+  → left + Final width MUST BE <= ${newSize.width - 30}
+  → top + Final height MUST BE <= ${newSize.height - 30}
 
-YOUR TASK: Create a layout where ALL ${objectsData.length} layers are beautifully arranged within the white canvas, scaled appropriately, and work together as a unified design.
+SCALING GUIDELINES:
+- Scale between 0.3 (minimum readable) to 1.5 (maximum)
+- Ensure all elements remain readable and visible
+- Consider visual importance when scaling
 
-RESPOND with precise positioning for ALL layers in JSON format:
+YOUR MISSION: Position ALL ${objectsData.length} elements so they create a beautiful design that fits COMPLETELY within the ${newSize.width}×${newSize.height} white canvas.
+
+RESPOND in this exact JSON format with positions for ALL elements:
 {
-  "layoutStrategy": "describe how you arranged all ${objectsData.length} layers together",
+  "layoutStrategy": "How I arranged all ${objectsData.length} elements within the white canvas",
   "placements": [
     {
       "id": "obj_0",
       "left": 50,
-      "top": 40,
-      "scaleX": 0.8,
-      "scaleY": 0.8,
-      "reasoning": "why you positioned this layer here and how it works with other layers"
+      "top": 60,
+      "scaleX": 0.7,
+      "scaleY": 0.7,
+      "reasoning": "Position and scale that keeps this element within white canvas boundaries"
     }
   ],
-  "designRationale": "explain how this layout makes all ${objectsData.length} layers work together beautifully"
+  "designRationale": "Why this arrangement keeps all elements within the white canvas and looks good"
 }`
               },
               {
@@ -206,20 +209,57 @@ RESPOND with precise positioning for ALL layers in JSON format:
         const safeWidth = originalObj.width * safeScaleX;
         const safeHeight = originalObj.height * safeScaleY;
         
-        // Ensure positioning stays within canvas with proper margins
-        const margin = 20;
-        const maxLeft = newSize.width - safeWidth - margin;
-        const maxTop = newSize.height - safeHeight - margin;
+        // STRICT canvas boundary enforcement with larger margins
+        const margin = 30;
+        const maxLeft = Math.max(margin, newSize.width - safeWidth - margin);
+        const maxTop = Math.max(margin, newSize.height - safeHeight - margin);
         
-        const safeLeft = Math.max(margin, Math.min(placement.left, maxLeft));
-        const safeTop = Math.max(margin, Math.min(placement.top, maxTop));
+        // Force positioning within safe boundaries
+        let safeLeft = Math.max(margin, Math.min(placement.left, maxLeft));
+        let safeTop = Math.max(margin, Math.min(placement.top, maxTop));
+        
+        // Double-check final position doesn't exceed canvas
+        if (safeLeft + safeWidth > newSize.width - margin) {
+          safeLeft = Math.max(margin, newSize.width - safeWidth - margin);
+        }
+        if (safeTop + safeHeight > newSize.height - margin) {
+          safeTop = Math.max(margin, newSize.height - safeHeight - margin);
+        }
+        
+        // Final safety check - if object is still too big, scale it down more
+        if (safeLeft + safeWidth > newSize.width - margin || safeTop + safeHeight > newSize.height - margin) {
+          const maxScaleX = Math.min(safeScaleX, (newSize.width - 2 * margin) / originalObj.width);
+          const maxScaleY = Math.min(safeScaleY, (newSize.height - 2 * margin) / originalObj.height);
+          const finalScale = Math.max(0.3, Math.min(maxScaleX, maxScaleY));
+          
+          safeScaleX = finalScale;
+          safeScaleY = finalScale;
+          
+          // Recalculate with new scale
+          const newWidth = originalObj.width * finalScale;
+          const newHeight = originalObj.height * finalScale;
+          safeLeft = Math.max(margin, Math.min(safeLeft, newSize.width - newWidth - margin));
+          safeTop = Math.max(margin, Math.min(safeTop, newSize.height - newHeight - margin));
+          
+          console.log(`🔧 Force-scaled ${placement.id} to fit: scale=${finalScale.toFixed(2)}`);
+        }
+        
+        // Final size after all corrections
+        const finalWidth = originalObj.width * safeScaleX;
+        const finalHeight = originalObj.height * safeScaleY;
         
         console.log(`🔧 Validating layer ${placement.id}:`, {
           original: { left: placement.left, top: placement.top, scaleX: placement.scaleX, scaleY: placement.scaleY },
           validated: { left: safeLeft, top: safeTop, scaleX: safeScaleX, scaleY: safeScaleY },
-          finalSize: { width: safeWidth, height: safeHeight },
-          bounds: { maxLeft, maxTop },
-          withinBounds: safeLeft >= margin && safeTop >= margin && safeLeft + safeWidth <= newSize.width - margin && safeTop + safeHeight <= newSize.height - margin
+          finalSize: { width: finalWidth, height: finalHeight },
+          canvasSize: { width: newSize.width, height: newSize.height },
+          boundaries: { 
+            rightEdge: safeLeft + finalWidth, 
+            bottomEdge: safeTop + finalHeight,
+            maxRight: newSize.width - margin,
+            maxBottom: newSize.height - margin
+          },
+          withinBounds: safeLeft >= margin && safeTop >= margin && safeLeft + finalWidth <= newSize.width - margin && safeTop + finalHeight <= newSize.height - margin
         });
         
         return {
