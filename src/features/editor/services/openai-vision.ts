@@ -82,25 +82,38 @@ export class OpenAIVisionService {
             content: [
               {
                 type: "text",
-                text: `Here is an image with canvas size ${currentSize.width}×${currentSize.height} and the following layers:
+                text: `You are a professional graphic designer. Here is a canvas with size ${currentSize.width}×${currentSize.height} containing these layers:
 
 ${layersList}
 
-TASK: Resize to new canvas size ${newSize.width}×${newSize.height}. Resize all layers to fit INSIDE the new canvas boundaries.
+DESIGN CHALLENGE: Resize this design to fit perfectly in a new ${newSize.width}×${newSize.height} white canvas.
 
-CRITICAL RULES:
-1. ALL objects must be positioned INSIDE the canvas boundaries (0,0) to (${newSize.width},${newSize.height})
-2. Object positions (left, top) must be >= 0 
-3. Object positions + object size must be <= canvas size
-4. For object at (left, top) with size (width×height) and scale (scaleX, scaleY):
-   - left + (width × scaleX) must be <= ${newSize.width}
-   - top + (height × scaleY) must be <= ${newSize.height}
-5. Leave at least 10px margin from canvas edges
-6. Scale objects appropriately but keep them readable (minimum scale 0.3)
+CRITICAL REQUIREMENTS:
+🎯 ALL ${objectsData.length} LAYERS must be visible within the white canvas boundaries
+🎯 ALL layers must work together as a cohesive, well-designed composition
+🎯 NO layer can be positioned outside the white canvas area
+🎯 The final result must look professionally designed, not randomly placed
 
-RESPOND ONLY in this JSON format:
+DESIGN CONSTRAINTS:
+• Canvas boundaries: (0,0) to (${newSize.width},${newSize.height})
+• Minimum 20px margin from all edges for breathing room
+• Each layer must be scaled appropriately (minimum 0.4x, maximum 2.0x)
+• Consider visual hierarchy - important elements should be more prominent
+• Maintain good spacing between layers - no overlapping unless intentional
+• Think about the overall composition flow and balance
+
+MATHEMATICAL VALIDATION:
+For each layer at position (left, top) with size (width×height) and scale (scaleX, scaleY):
+✓ left >= 20
+✓ top >= 20  
+✓ left + (width × scaleX) <= ${newSize.width - 20}
+✓ top + (height × scaleY) <= ${newSize.height - 20}
+
+YOUR TASK: Create a layout where ALL ${objectsData.length} layers are beautifully arranged within the white canvas, scaled appropriately, and work together as a unified design.
+
+RESPOND with precise positioning for ALL layers in JSON format:
 {
-  "layoutStrategy": "brief description of your resize approach",
+  "layoutStrategy": "describe how you arranged all ${objectsData.length} layers together",
   "placements": [
     {
       "id": "obj_0",
@@ -108,10 +121,10 @@ RESPOND ONLY in this JSON format:
       "top": 40,
       "scaleX": 0.8,
       "scaleY": 0.8,
-      "reasoning": "why you positioned and scaled this way"
+      "reasoning": "why you positioned this layer here and how it works with other layers"
     }
   ],
-  "designRationale": "how this maintains good design in the new size"
+  "designRationale": "explain how this layout makes all ${objectsData.length} layers work together beautifully"
 }`
               },
               {
@@ -144,37 +157,69 @@ RESPOND ONLY in this JSON format:
       // Add applied principles for compatibility
       result.appliedPrinciples = result.appliedPrinciples || ['smart scaling', 'layout preservation'];
       
-      // Validate and fix AI positioning to ensure objects stay within canvas bounds
-      const validatedPlacements = result.placements?.map((placement, index) => {
+      // Validate that AI provided placements for ALL layers
+      if (!result.placements || result.placements.length !== objectsData.length) {
+        console.error(`❌ AI only provided ${result.placements?.length || 0} placements for ${objectsData.length} layers!`);
+        
+        // Create missing placements for layers the AI forgot
+        const missingPlacements = objectsData.map((obj, index) => {
+          const existingPlacement = result.placements?.find(p => p.id === obj.id);
+          if (existingPlacement) return existingPlacement;
+          
+          // Create safe fallback placement for missing layer
+          const margin = 20;
+          const maxScale = Math.min(
+            (newSize.width - 2 * margin) / obj.width,
+            (newSize.height - 2 * margin) / obj.height,
+            1.0
+          );
+          const safeScale = Math.max(0.4, maxScale * 0.8);
+          
+          console.log(`🔧 Creating fallback placement for missing layer ${obj.id}`);
+          return {
+            id: obj.id,
+            left: margin + (index * 50) % (newSize.width - obj.width * safeScale - 2 * margin),
+            top: margin + Math.floor(index / 3) * 100,
+            scaleX: safeScale,
+            scaleY: safeScale,
+            reasoning: `Fallback placement for layer AI forgot to position`
+          };
+        });
+        result.placements = missingPlacements;
+      }
+
+      // Validate and fix AI positioning to ensure ALL objects stay within canvas bounds
+      const validatedPlacements = result.placements.map((placement, index) => {
         const originalObj = objectsData.find(obj => obj.id === placement.id) || objectsData[index];
-        if (!originalObj) return placement;
+        if (!originalObj) {
+          console.error(`❌ Could not find original object for placement ${placement.id}`);
+          return placement;
+        }
         
-        // Calculate object final size after scaling
-        const finalWidth = originalObj.width * placement.scaleX;
-        const finalHeight = originalObj.height * placement.scaleY;
+        // Ensure minimum and maximum scale limits
+        const minScale = 0.4;
+        const maxScale = 2.0;
+        const safeScaleX = Math.max(minScale, Math.min(maxScale, placement.scaleX));
+        const safeScaleY = Math.max(minScale, Math.min(maxScale, placement.scaleY));
         
-        // Ensure minimum scale
-        const minScale = 0.3;
-        const safeScaleX = Math.max(minScale, placement.scaleX);
-        const safeScaleY = Math.max(minScale, placement.scaleY);
-        
-        // Recalculate size with safe scaling
+        // Calculate final size after safe scaling
         const safeWidth = originalObj.width * safeScaleX;
         const safeHeight = originalObj.height * safeScaleY;
         
-        // Ensure positioning stays within canvas with 10px margin
-        const margin = 10;
+        // Ensure positioning stays within canvas with proper margins
+        const margin = 20;
         const maxLeft = newSize.width - safeWidth - margin;
         const maxTop = newSize.height - safeHeight - margin;
         
         const safeLeft = Math.max(margin, Math.min(placement.left, maxLeft));
         const safeTop = Math.max(margin, Math.min(placement.top, maxTop));
         
-        console.log(`🔧 Validating ${placement.id}:`, {
+        console.log(`🔧 Validating layer ${placement.id}:`, {
           original: { left: placement.left, top: placement.top, scaleX: placement.scaleX, scaleY: placement.scaleY },
-          safe: { left: safeLeft, top: safeTop, scaleX: safeScaleX, scaleY: safeScaleY },
-          size: { width: safeWidth, height: safeHeight },
-          bounds: { maxLeft, maxTop }
+          validated: { left: safeLeft, top: safeTop, scaleX: safeScaleX, scaleY: safeScaleY },
+          finalSize: { width: safeWidth, height: safeHeight },
+          bounds: { maxLeft, maxTop },
+          withinBounds: safeLeft >= margin && safeTop >= margin && safeLeft + safeWidth <= newSize.width - margin && safeTop + safeHeight <= newSize.height - margin
         });
         
         return {
@@ -184,7 +229,7 @@ RESPOND ONLY in this JSON format:
           scaleX: safeScaleX,
           scaleY: safeScaleY,
         };
-      }) || [];
+      });
       
       result.placements = validatedPlacements;
       result.designRationale = (result.designRationale || '') + ' [Validated for canvas boundaries]';
