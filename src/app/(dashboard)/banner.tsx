@@ -27,7 +27,7 @@ export const Banner = () => {
       width: selectedSize.width.toString(),
       height: selectedSize.height.toString(),
     });
-    router.push(`/demo?${params.toString()}`);
+    router.push(`/editor?${params.toString()}`);
   };
 
   return (

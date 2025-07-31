@@ -7,7 +7,7 @@ export const TemplatesSection = () => {
   const router = useRouter();
 
   const handleStartCreating = () => {
-    router.push('/demo');
+    router.push('/editor');
   };
 
   return (
