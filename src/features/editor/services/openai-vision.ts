@@ -102,28 +102,31 @@ ${layersList}
 From: ${currentSize.width}×${currentSize.height}  
 To: ${newSize.width}×${newSize.height}
 
-🚨 CRITICAL RULE: ALL ${objectsData.length} elements MUST be placed INSIDE the white rectangular canvas area ONLY.
+🚨 CRITICAL BOUNDARY ENFORCEMENT: ALL ${objectsData.length} elements MUST stay COMPLETELY INSIDE the white canvas boundaries.
 
-ABSOLUTE REQUIREMENTS:
-1. The white canvas area starts at (0,0) and ends at (${newSize.width},${newSize.height})
-2. EVERY element must have its position AND size fit completely within these boundaries
-3. NO element can extend beyond the white canvas edges
-4. ALL ${objectsData.length} elements must be visible and well-arranged
+⚠️ ZERO TOLERANCE POLICY: Any element placed outside canvas boundaries will BREAK the design.
 
-POSITIONING RULES:
-- Element position (left, top) must be >= 30 (minimum margin)
-- Element position + element size must be <= canvas size - 30 (maximum boundary)
-- For element at (left, top) with original size (width, height) and scale (scaleX, scaleY):
-  → Final width = width × scaleX
-  → Final height = height × scaleY  
-  → left + Final width MUST BE <= ${newSize.width - 30}
-  → top + Final height MUST BE <= ${newSize.height - 30}
+STRICT CANVAS BOUNDARIES:
+• Canvas dimensions: ${newSize.width} × ${newSize.height} pixels
+• Safe zone: 40px margin from ALL edges (top, bottom, left, right)
+• Maximum usable area: ${newSize.width - 80} × ${newSize.height - 80} pixels
 
-SCALING GUIDELINES:
-- Scale between 0.3 (minimum readable) to 1.5 (maximum)
-- Ensure all elements remain readable and visible
-- Consider visual importance when scaling
-- Maintain visual hierarchy and design principles
+MANDATORY POSITIONING RULES:
+• Element position (left, top) must be >= 40 pixels from canvas edges
+• Element's right edge (left + final_width) must be <= ${newSize.width - 40}
+• Element's bottom edge (top + final_height) must be <= ${newSize.height - 40}
+• Final dimensions = original_width × scaleX, original_height × scaleY
+
+FOR EXTREME DIMENSION CHANGES (like portrait ↔ landscape):
+• Prioritize fitting ALL elements within safe boundaries
+• Scale elements smaller if needed to prevent boundary violations
+• Distribute elements intelligently across available space
+• Never sacrifice boundary compliance for visual appeal
+
+SCALE LIMITS:
+• Minimum scale: 0.2 (ensure visibility)
+• Maximum scale: 1.8 (prevent oversizing)
+• Automatic scale reduction if element exceeds boundaries
 
 YOUR MISSION: Position ALL ${objectsData.length} elements so they create a beautiful, professional design that fits COMPLETELY within the ${newSize.width}×${newSize.height} white canvas while maintaining visual hierarchy and modern design aesthetics.
 
@@ -222,8 +225,8 @@ RESPOND in this exact JSON format with positions for ALL elements:
         const safeWidth = originalObj.width * safeScaleX;
         const safeHeight = originalObj.height * safeScaleY;
         
-        // STRICT canvas boundary enforcement with larger margins
-        const margin = 30;
+        // ENHANCED boundary enforcement with larger safety margins for extreme resizes
+        const margin = 40; // Increased margin for better safety
         const maxLeft = Math.max(margin, newSize.width - safeWidth - margin);
         const maxTop = Math.max(margin, newSize.height - safeHeight - margin);
         
@@ -239,41 +242,85 @@ RESPOND in this exact JSON format with positions for ALL elements:
           safeTop = Math.max(margin, newSize.height - safeHeight - margin);
         }
         
-        // Final safety check - if object is still too big, scale it down more
-        if (safeLeft + safeWidth > newSize.width - margin || safeTop + safeHeight > newSize.height - margin) {
-          const maxScaleX = Math.min(safeScaleX, (newSize.width - 2 * margin) / originalObj.width);
-          const maxScaleY = Math.min(safeScaleY, (newSize.height - 2 * margin) / originalObj.height);
-          const finalScale = Math.max(0.3, Math.min(maxScaleX, maxScaleY));
+        // AGGRESSIVE boundary enforcement - multiple validation passes
+        let validationPasses = 0;
+        const maxValidationPasses = 3;
+        
+        while (validationPasses < maxValidationPasses) {
+          const currentWidth = originalObj.width * safeScaleX;
+          const currentHeight = originalObj.height * safeScaleY;
           
-          safeScaleX = finalScale;
-          safeScaleY = finalScale;
+          // Check if object exceeds boundaries
+          const exceedsRight = safeLeft + currentWidth > newSize.width - margin;
+          const exceedsBottom = safeTop + currentHeight > newSize.height - margin;
+          const exceedsLeft = safeLeft < margin;
+          const exceedsTop = safeTop < margin;
           
-          // Recalculate with new scale
-          const newWidth = originalObj.width * finalScale;
-          const newHeight = originalObj.height * finalScale;
-          safeLeft = Math.max(margin, Math.min(safeLeft, newSize.width - newWidth - margin));
-          safeTop = Math.max(margin, Math.min(safeTop, newSize.height - newHeight - margin));
+          if (!exceedsRight && !exceedsBottom && !exceedsLeft && !exceedsTop) {
+            break; // Object fits perfectly
+          }
           
-          console.log(`🔧 Force-scaled ${placement.id} to fit: scale=${finalScale.toFixed(2)}`);
+          // Calculate required scale reduction
+          const maxAllowedWidth = newSize.width - 2 * margin;
+          const maxAllowedHeight = newSize.height - 2 * margin;
+          const requiredScaleX = Math.min(safeScaleX, maxAllowedWidth / originalObj.width);
+          const requiredScaleY = Math.min(safeScaleY, maxAllowedHeight / originalObj.height);
+          const emergencyScale = Math.max(0.2, Math.min(requiredScaleX, requiredScaleY));
+          
+          safeScaleX = emergencyScale;
+          safeScaleY = emergencyScale;
+          
+          // Recalculate position with emergency scale
+          const emergencyWidth = originalObj.width * emergencyScale;
+          const emergencyHeight = originalObj.height * emergencyScale;
+          
+          // Center in available space if needed
+          if (exceedsRight || exceedsLeft) {
+            safeLeft = Math.max(margin, (newSize.width - emergencyWidth) / 2);
+          }
+          if (exceedsBottom || exceedsTop) {
+            safeTop = Math.max(margin, (newSize.height - emergencyHeight) / 2);
+          }
+          
+          // Final boundary clamp
+          safeLeft = Math.max(margin, Math.min(safeLeft, newSize.width - emergencyWidth - margin));
+          safeTop = Math.max(margin, Math.min(safeTop, newSize.height - emergencyHeight - margin));
+          
+          validationPasses++;
+          console.log(`🚨 Emergency boundary fix pass ${validationPasses} for ${placement.id}: scale=${emergencyScale.toFixed(2)}, pos=(${safeLeft.toFixed(1)}, ${safeTop.toFixed(1)})`);
         }
         
         // Final size after all corrections
         const finalWidth = originalObj.width * safeScaleX;
         const finalHeight = originalObj.height * safeScaleY;
         
-        console.log(`🔧 Validating layer ${placement.id}:`, {
+        // COMPREHENSIVE boundary validation logging
+        const rightEdge = safeLeft + finalWidth;
+        const bottomEdge = safeTop + finalHeight;
+        const maxRight = newSize.width - margin;
+        const maxBottom = newSize.height - margin;
+        const withinBounds = safeLeft >= margin && safeTop >= margin && rightEdge <= maxRight && bottomEdge <= maxBottom;
+        
+        console.log(`🔧 Layer ${placement.id} boundary validation:`, {
           original: { left: placement.left, top: placement.top, scaleX: placement.scaleX, scaleY: placement.scaleY },
           validated: { left: safeLeft, top: safeTop, scaleX: safeScaleX, scaleY: safeScaleY },
           finalSize: { width: finalWidth, height: finalHeight },
           canvasSize: { width: newSize.width, height: newSize.height },
-          boundaries: { 
-            rightEdge: safeLeft + finalWidth, 
-            bottomEdge: safeTop + finalHeight,
-            maxRight: newSize.width - margin,
-            maxBottom: newSize.height - margin
-          },
-          withinBounds: safeLeft >= margin && safeTop >= margin && safeLeft + finalWidth <= newSize.width - margin && safeTop + finalHeight <= newSize.height - margin
+          boundaries: { rightEdge, bottomEdge, maxRight, maxBottom },
+          withinBounds,
+          violations: {
+            left: safeLeft < margin,
+            top: safeTop < margin,
+            right: rightEdge > maxRight,
+            bottom: bottomEdge > maxBottom
+          }
         });
+        
+        // FAIL-SAFE: If still violating boundaries after all fixes, log critical error
+        if (!withinBounds) {
+          console.error(`🚨 CRITICAL: Layer ${placement.id} STILL exceeds boundaries after validation!`);
+          console.error('This should NEVER happen - boundary validation failed');
+        }
         
         return {
           ...placement,
@@ -284,8 +331,30 @@ RESPOND in this exact JSON format with positions for ALL elements:
         };
       });
       
+      // Final system-wide boundary compliance check
+      const boundaryViolations = validatedPlacements.filter(placement => {
+        const originalObj = objectsData.find(obj => obj.id === placement.id);
+        if (!originalObj) return false;
+        
+        const finalWidth = originalObj.width * placement.scaleX;
+        const finalHeight = originalObj.height * placement.scaleY;
+        const margin = 40;
+        
+        return placement.left < margin ||
+               placement.top < margin ||
+               placement.left + finalWidth > newSize.width - margin ||
+               placement.top + finalHeight > newSize.height - margin;
+      });
+      
+      if (boundaryViolations.length > 0) {
+        console.error(`🚨 SYSTEM ALERT: ${boundaryViolations.length} objects still violate boundaries:`, 
+          boundaryViolations.map(p => p.id));
+      } else {
+        console.log(`✅ All ${validatedPlacements.length} objects verified within canvas boundaries`);
+      }
+      
       result.placements = validatedPlacements;
-      result.designRationale = (result.designRationale || '') + ' [Validated for canvas boundaries]';
+      result.designRationale = (result.designRationale || '') + ` [Enhanced boundary validation: ${validatedPlacements.length} objects secured within ${newSize.width}×${newSize.height} canvas]`;
       
       return result;
     } catch (error) {
