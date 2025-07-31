@@ -15,7 +15,8 @@ export const useCreateProject = () => {
       const response = await client.api.projects.$post({ json });
 
       if (!response.ok) {
-        throw new Error(response.statusText ?? 'An unknown error occured.');
+        const errorMessage = response.statusText || 'An unknown error occurred.';
+        throw new Error(errorMessage);
       }
 
       return await response.json();
