@@ -43,42 +43,39 @@ const createDemoProject = (width: number, height: number) => ({
 
 const DemoPage = () => {
   const [activeTool, setActiveTool] = useState<ActiveTool>('select');
-  const [showSizeSelector, setShowSizeSelector] = useState(true);
-  const [canvasSize, setCanvasSize] = useState({ width: 400, height: 400 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Get canvas size from URL parameters with error handling (fallback)
   const searchParams = useSearchParams();
   
-  // Initialize canvas size from URL params if available, otherwise show selector
-  const urlWidth = useMemo(() => {
+  // Initialize canvas size from URL params immediately, with fallback
+  const initialCanvasSize = useMemo(() => {
     try {
       const widthParam = searchParams.get('width');
-      return widthParam ? Number(widthParam) : null;
+      const heightParam = searchParams.get('height');
+      
+      if (widthParam && heightParam) {
+        const width = Number(widthParam);
+        const height = Number(heightParam);
+        
+        if (width > 0 && height > 0) {
+          console.log('Initializing with URL params:', { width, height });
+          return { width, height };
+        }
+      }
     } catch (error) {
-      console.warn('Error parsing width parameter:', error);
-      return null;
+      console.warn('Error parsing URL parameters:', error);
     }
+    
+    // Fallback to default size
+    console.log('Using default canvas size');
+    return { width: 400, height: 400 };
   }, [searchParams]);
   
-  const urlHeight = useMemo(() => {
-    try {
-      const heightParam = searchParams.get('height');
-      return heightParam ? Number(heightParam) : null;
-    } catch (error) {
-      console.warn('Error parsing height parameter:', error);
-      return null;
-    }
-  }, [searchParams]);
-
-  // If URL has size parameters, use them and skip the selector
-  useEffect(() => {
-    if (urlWidth && urlHeight) {
-      setCanvasSize({ width: urlWidth, height: urlHeight });
-      setShowSizeSelector(false);
-    }
-  }, [urlWidth, urlHeight]);
+  const [canvasSize, setCanvasSize] = useState(initialCanvasSize);
+  const [showSizeSelector, setShowSizeSelector] = useState(!searchParams.get('width') || !searchParams.get('height'));
+  
 
   const handleSizeSelect = (width: number, height: number) => {
     setCanvasSize({ width, height });
@@ -95,7 +92,10 @@ const DemoPage = () => {
   const height = canvasSize.height;
   
   // Create demo project with custom size
-  const demoProject = useMemo(() => createDemoProject(width, height), [width, height]);
+  const demoProject = useMemo(() => {
+    console.log('Creating demo project with dimensions:', { width, height });
+    return createDemoProject(width, height);
+  }, [width, height]);
 
   // Demo save function - saves to localStorage and shows success
   const demoSave = useCallback((values: { json: string; height: number; width: number }) => {
@@ -140,6 +140,14 @@ const DemoPage = () => {
     defaultHeight: demoProject.height,
     clearSelectionCallback: onClearSelection,
     saveCallback: demoSave,
+  });
+  
+  // Debug log when editor receives new dimensions
+  console.log('Editor initialized with:', {
+    width: demoProject.width,
+    height: demoProject.height,
+    canvasSize,
+    showSizeSelector
   });
 
   const onChangeActiveTool = useCallback(
