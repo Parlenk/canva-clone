@@ -568,3 +568,290 @@ Warning: CircleSwatch: Support for defaultProps will be removed from function co
     at r3 (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:18890)
     at ServerInsertedHTMLProvider (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:24328)
  GET /editor 200 in 3379ms
+ ✓ Compiled in 632ms (2472 modules)
+ ✓ Compiled in 129ms (1008 modules)
+ ✓ Compiled in 138ms (1008 modules)
+ ✓ Compiled /editor in 184ms (1989 modules)
+Warning: Chrome: Support for defaultProps will be removed from function components in a future major release. Use JavaScript default parameters instead.
+    at Chrome (webpack-internal:///(ssr)/./node_modules/react-color/es/components/chrome/Chrome.js:27:20)
+    at ColorPicker (webpack-internal:///(ssr)/./node_modules/react-color/es/components/common/ColorWrap.js:29:7)
+    at div
+    at ColorPicker (webpack-internal:///(ssr)/./src/features/editor/components/color-picker.tsx:14:24)
+    at div
+    at div
+    at div
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-primitive/dist/index.mjs:38:13)
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-scroll-area/dist/index.mjs:100:13)
+    at div
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-primitive/dist/index.mjs:38:13)
+    at Provider (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-context/dist/index.mjs:34:15)
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-scroll-area/dist/index.mjs:51:13)
+    at eval (webpack-internal:///(ssr)/./src/components/ui/scroll-area.tsx:16:83)
+    at aside
+    at FillColorSidebar (webpack-internal:///(ssr)/./src/features/editor/components/fill-color-sidebar.tsx:20:29)
+    at main
+    at div
+    at DemoPage (webpack-internal:///(ssr)/./src/app/editor/page.tsx:72:88)
+    at ClientPageRoot (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/client-page.js:14:11)
+    at Lazy
+    at InnerLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:242:11)
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at NotFoundBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at LoadingBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:347:11)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at InnerScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:153:9)
+    at ScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:228:11)
+    at RenderFromTemplateContext (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/render-from-template-context.js:16:44)
+    at Lazy
+    at OuterLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:367:11)
+    at Lazy
+    at InnerLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:242:11)
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at NotFoundErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:76:9)
+    at NotFoundBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at LoadingBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:347:11)
+    at ErrorBoundaryHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:112:9)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at InnerScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:153:9)
+    at ScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:228:11)
+    at RenderFromTemplateContext (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/render-from-template-context.js:16:44)
+    at Lazy
+    at OuterLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:367:11)
+    at Lazy
+    at QueryClientProvider (webpack-internal:///(ssr)/./node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:23:30)
+    at QueryProvider (webpack-internal:///(ssr)/./src/components/query-provider.tsx:30:26)
+    at Providers (webpack-internal:///(ssr)/./src/components/providers.tsx:10:22)
+    at Lazy
+    at body
+    at html
+    at SessionProvider (webpack-internal:///(ssr)/./node_modules/next-auth/react.js:247:13)
+    at Lazy
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at ReactDevOverlay (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/react-dev-overlay/app/ReactDevOverlay.js:87:9)
+    at HotReload (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:322:11)
+    at Router (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/app-router.js:202:11)
+    at ErrorBoundaryHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:112:9)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at AppRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/app-router.js:564:13)
+    at Lazy
+    at r3 (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:18890)
+    at r3 (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:18890)
+    at ServerInsertedHTMLProvider (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:24328)
+Warning: Checkboard: Support for defaultProps will be removed from function components in a future major release. Use JavaScript default parameters instead.
+    at Checkboard (webpack-internal:///(ssr)/./node_modules/react-color/es/components/common/Checkboard.js:17:20)
+    at div
+    at div
+    at div
+    at div
+    at div
+    at Chrome (webpack-internal:///(ssr)/./node_modules/react-color/es/components/chrome/Chrome.js:27:20)
+    at ColorPicker (webpack-internal:///(ssr)/./node_modules/react-color/es/components/common/ColorWrap.js:29:7)
+    at div
+    at ColorPicker (webpack-internal:///(ssr)/./src/features/editor/components/color-picker.tsx:14:24)
+    at div
+    at div
+    at div
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-primitive/dist/index.mjs:38:13)
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-scroll-area/dist/index.mjs:100:13)
+    at div
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-primitive/dist/index.mjs:38:13)
+    at Provider (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-context/dist/index.mjs:34:15)
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-scroll-area/dist/index.mjs:51:13)
+    at eval (webpack-internal:///(ssr)/./src/components/ui/scroll-area.tsx:16:83)
+    at aside
+    at FillColorSidebar (webpack-internal:///(ssr)/./src/features/editor/components/fill-color-sidebar.tsx:20:29)
+    at main
+    at div
+    at DemoPage (webpack-internal:///(ssr)/./src/app/editor/page.tsx:72:88)
+    at ClientPageRoot (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/client-page.js:14:11)
+    at Lazy
+    at InnerLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:242:11)
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at NotFoundBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at LoadingBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:347:11)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at InnerScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:153:9)
+    at ScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:228:11)
+    at RenderFromTemplateContext (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/render-from-template-context.js:16:44)
+    at Lazy
+    at OuterLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:367:11)
+    at Lazy
+    at InnerLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:242:11)
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at NotFoundErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:76:9)
+    at NotFoundBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at LoadingBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:347:11)
+    at ErrorBoundaryHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:112:9)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at InnerScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:153:9)
+    at ScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:228:11)
+    at RenderFromTemplateContext (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/render-from-template-context.js:16:44)
+    at Lazy
+    at OuterLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:367:11)
+    at Lazy
+    at QueryClientProvider (webpack-internal:///(ssr)/./node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:23:30)
+    at QueryProvider (webpack-internal:///(ssr)/./src/components/query-provider.tsx:30:26)
+    at Providers (webpack-internal:///(ssr)/./src/components/providers.tsx:10:22)
+    at Lazy
+    at body
+    at html
+    at SessionProvider (webpack-internal:///(ssr)/./node_modules/next-auth/react.js:247:13)
+    at Lazy
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at ReactDevOverlay (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/react-dev-overlay/app/ReactDevOverlay.js:87:9)
+    at HotReload (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:322:11)
+    at Router (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/app-router.js:202:11)
+    at ErrorBoundaryHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:112:9)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at AppRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/app-router.js:564:13)
+    at Lazy
+    at r3 (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:18890)
+    at r3 (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:18890)
+    at ServerInsertedHTMLProvider (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:24328)
+Warning: Circle: Support for defaultProps will be removed from function components in a future major release. Use JavaScript default parameters instead.
+    at Circle (webpack-internal:///(ssr)/./node_modules/react-color/es/components/circle/Circle.js:27:20)
+    at ColorPicker (webpack-internal:///(ssr)/./node_modules/react-color/es/components/common/ColorWrap.js:29:7)
+    at div
+    at ColorPicker (webpack-internal:///(ssr)/./src/features/editor/components/color-picker.tsx:14:24)
+    at div
+    at div
+    at div
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-primitive/dist/index.mjs:38:13)
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-scroll-area/dist/index.mjs:100:13)
+    at div
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-primitive/dist/index.mjs:38:13)
+    at Provider (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-context/dist/index.mjs:34:15)
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-scroll-area/dist/index.mjs:51:13)
+    at eval (webpack-internal:///(ssr)/./src/components/ui/scroll-area.tsx:16:83)
+    at aside
+    at FillColorSidebar (webpack-internal:///(ssr)/./src/features/editor/components/fill-color-sidebar.tsx:20:29)
+    at main
+    at div
+    at DemoPage (webpack-internal:///(ssr)/./src/app/editor/page.tsx:72:88)
+    at ClientPageRoot (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/client-page.js:14:11)
+    at Lazy
+    at InnerLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:242:11)
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at NotFoundBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at LoadingBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:347:11)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at InnerScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:153:9)
+    at ScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:228:11)
+    at RenderFromTemplateContext (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/render-from-template-context.js:16:44)
+    at Lazy
+    at OuterLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:367:11)
+    at Lazy
+    at InnerLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:242:11)
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at NotFoundErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:76:9)
+    at NotFoundBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at LoadingBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:347:11)
+    at ErrorBoundaryHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:112:9)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at InnerScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:153:9)
+    at ScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:228:11)
+    at RenderFromTemplateContext (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/render-from-template-context.js:16:44)
+    at Lazy
+    at OuterLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:367:11)
+    at Lazy
+    at QueryClientProvider (webpack-internal:///(ssr)/./node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:23:30)
+    at QueryProvider (webpack-internal:///(ssr)/./src/components/query-provider.tsx:30:26)
+    at Providers (webpack-internal:///(ssr)/./src/components/providers.tsx:10:22)
+    at Lazy
+    at body
+    at html
+    at SessionProvider (webpack-internal:///(ssr)/./node_modules/next-auth/react.js:247:13)
+    at Lazy
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at ReactDevOverlay (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/react-dev-overlay/app/ReactDevOverlay.js:87:9)
+    at HotReload (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:322:11)
+    at Router (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/app-router.js:202:11)
+    at ErrorBoundaryHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:112:9)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at AppRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/app-router.js:564:13)
+    at Lazy
+    at r3 (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:18890)
+    at r3 (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:18890)
+    at ServerInsertedHTMLProvider (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:24328)
+Warning: CircleSwatch: Support for defaultProps will be removed from function components in a future major release. Use JavaScript default parameters instead.
+    at CircleSwatch (webpack-internal:///(ssr)/./node_modules/react-color/es/components/circle/CircleSwatch.js:16:20)
+    at span
+    at Hover (webpack-internal:///(ssr)/./node_modules/reactcss/lib/components/hover.js:33:7)
+    at div
+    at Circle (webpack-internal:///(ssr)/./node_modules/react-color/es/components/circle/Circle.js:27:20)
+    at ColorPicker (webpack-internal:///(ssr)/./node_modules/react-color/es/components/common/ColorWrap.js:29:7)
+    at div
+    at ColorPicker (webpack-internal:///(ssr)/./src/features/editor/components/color-picker.tsx:14:24)
+    at div
+    at div
+    at div
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-primitive/dist/index.mjs:38:13)
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-scroll-area/dist/index.mjs:100:13)
+    at div
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-primitive/dist/index.mjs:38:13)
+    at Provider (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-context/dist/index.mjs:34:15)
+    at eval (webpack-internal:///(ssr)/./node_modules/@radix-ui/react-scroll-area/dist/index.mjs:51:13)
+    at eval (webpack-internal:///(ssr)/./src/components/ui/scroll-area.tsx:16:83)
+    at aside
+    at FillColorSidebar (webpack-internal:///(ssr)/./src/features/editor/components/fill-color-sidebar.tsx:20:29)
+    at main
+    at div
+    at DemoPage (webpack-internal:///(ssr)/./src/app/editor/page.tsx:72:88)
+    at ClientPageRoot (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/client-page.js:14:11)
+    at Lazy
+    at InnerLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:242:11)
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at NotFoundBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at LoadingBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:347:11)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at InnerScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:153:9)
+    at ScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:228:11)
+    at RenderFromTemplateContext (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/render-from-template-context.js:16:44)
+    at Lazy
+    at OuterLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:367:11)
+    at Lazy
+    at InnerLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:242:11)
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at NotFoundErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:76:9)
+    at NotFoundBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/not-found-boundary.js:84:11)
+    at LoadingBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:347:11)
+    at ErrorBoundaryHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:112:9)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at InnerScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:153:9)
+    at ScrollAndFocusHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:228:11)
+    at RenderFromTemplateContext (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/render-from-template-context.js:16:44)
+    at Lazy
+    at OuterLayoutRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/layout-router.js:367:11)
+    at Lazy
+    at QueryClientProvider (webpack-internal:///(ssr)/./node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:23:30)
+    at QueryProvider (webpack-internal:///(ssr)/./src/components/query-provider.tsx:30:26)
+    at Providers (webpack-internal:///(ssr)/./src/components/providers.tsx:10:22)
+    at Lazy
+    at body
+    at html
+    at SessionProvider (webpack-internal:///(ssr)/./node_modules/next-auth/react.js:247:13)
+    at Lazy
+    at RedirectErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:73:9)
+    at RedirectBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/redirect-boundary.js:81:11)
+    at ReactDevOverlay (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/react-dev-overlay/app/ReactDevOverlay.js:87:9)
+    at HotReload (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/react-dev-overlay/app/hot-reloader-client.js:322:11)
+    at Router (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/app-router.js:202:11)
+    at ErrorBoundaryHandler (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:112:9)
+    at ErrorBoundary (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/error-boundary.js:158:11)
+    at AppRouter (webpack-internal:///(ssr)/./node_modules/next/dist/client/components/app-router.js:564:13)
+    at Lazy
+    at r3 (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:18890)
+    at r3 (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:18890)
+    at ServerInsertedHTMLProvider (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:24328)
+ GET /editor 200 in 780ms
