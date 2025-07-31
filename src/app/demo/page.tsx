@@ -25,6 +25,7 @@ import { StrokeWidthSidebar } from '@/features/editor/components/stroke-width-si
 import { TemplateSidebar } from '@/features/editor/components/template-sidebar';
 import { TextSidebar } from '@/features/editor/components/text-sidebar';
 import { Toolbar } from '@/features/editor/components/toolbar';
+import { CanvasSizeSelector } from '@/components/ui/canvas-size-selector';
 
 // Function to create demo project data with custom canvas size
 const createDemoProject = (width: number, height: number) => ({
@@ -43,30 +44,56 @@ const createDemoProject = (width: number, height: number) => ({
 
 const DemoPage = () => {
   const [activeTool, setActiveTool] = useState<ActiveTool>('select');
+  const [showSizeSelector, setShowSizeSelector] = useState(true);
+  const [canvasSize, setCanvasSize] = useState({ width: 400, height: 400 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  // Get canvas size from URL parameters with error handling
+  // Get canvas size from URL parameters with error handling (fallback)
   const searchParams = useSearchParams();
-  const width = useMemo(() => {
+  
+  // Initialize canvas size from URL params if available, otherwise show selector
+  const urlWidth = useMemo(() => {
     try {
       const widthParam = searchParams.get('width');
-      return widthParam ? Number(widthParam) : 400;
+      return widthParam ? Number(widthParam) : null;
     } catch (error) {
       console.warn('Error parsing width parameter:', error);
-      return 400;
+      return null;
     }
   }, [searchParams]);
   
-  const height = useMemo(() => {
+  const urlHeight = useMemo(() => {
     try {
       const heightParam = searchParams.get('height');
-      return heightParam ? Number(heightParam) : 400;
+      return heightParam ? Number(heightParam) : null;
     } catch (error) {
       console.warn('Error parsing height parameter:', error);
-      return 400;
+      return null;
     }
   }, [searchParams]);
+
+  // If URL has size parameters, use them and skip the selector
+  useEffect(() => {
+    if (urlWidth && urlHeight) {
+      setCanvasSize({ width: urlWidth, height: urlHeight });
+      setShowSizeSelector(false);
+    }
+  }, [urlWidth, urlHeight]);
+
+  const handleSizeSelect = (width: number, height: number) => {
+    setCanvasSize({ width, height });
+    setShowSizeSelector(false);
+    
+    // Update URL to reflect the chosen size
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('width', width.toString());
+    newUrl.searchParams.set('height', height.toString());
+    window.history.replaceState({}, '', newUrl.toString());
+  };
+
+  const width = canvasSize.width;
+  const height = canvasSize.height;
   
   // Create demo project with custom size
   const demoProject = useMemo(() => createDemoProject(width, height), [width, height]);
@@ -136,6 +163,11 @@ const DemoPage = () => {
   );
 
   useEffect(() => {
+    // Only initialize canvas when size is selected (not showing selector)
+    if (showSizeSelector || !canvasRef.current || !containerRef.current) {
+      return;
+    }
+
     const canvas = new fabric.Canvas(canvasRef.current, {
       controlsAboveOverlay: true,
       preserveObjectStacking: true,
@@ -143,19 +175,24 @@ const DemoPage = () => {
 
     init({
       initialCanvas: canvas,
-      initialContainer: containerRef.current!,
+      initialContainer: containerRef.current,
     });
 
     return () => {
       canvas.dispose();
     };
-  }, [init]);
+  }, [init, showSizeSelector]);
 
   return (
     <div className="flex h-full flex-col">
+      {/* Size Selector Modal - shown at the beginning */}
+      {showSizeSelector && (
+        <CanvasSizeSelector onSizeSelect={handleSizeSelect} />
+      )}
+
       <Navbar
         id={demoProject.id}
-        title={demoProject.name}
+        title={`${demoProject.name} (${width}×${height})`}
         editor={editor}
         activeTool={activeTool}
         onChangeActiveTool={onChangeActiveTool}

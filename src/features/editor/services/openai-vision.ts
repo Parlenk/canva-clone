@@ -82,13 +82,25 @@ export class OpenAIVisionService {
             content: [
               {
                 type: "text",
-                text: `IMPORTANT: You are looking at a design canvas. The WHITE RECTANGULAR AREA in the image is the ONLY space where design elements should be placed.
+                text: `You are an expert image layout designer powered by AI.
 
-CURRENT SITUATION:
-- Current white canvas: ${currentSize.width}×${currentSize.height} pixels
-- Elements on canvas: ${layersList}
+I am giving you an image designed for ${currentSize.width}×${currentSize.height} px. I want you to intelligently resize it to ${newSize.width}×${newSize.height} px.
 
-TASK: Resize all elements to fit in a NEW white canvas of ${newSize.width}×${newSize.height} pixels.
+Here's what you need to do:
+1. Retain visual hierarchy — make sure the product and headline stay prominent.
+2. Reposition elements (logo, text, product) if needed to make it look natural and well-aligned.
+3. Do not distort or stretch. Resize each layer proportionally.
+4. Maintain white space, balance, and overall beauty.
+5. If background doesn't cover fully, extend using smart fill (blur or clone).
+6. Follow modern ad design rules: clarity, contrast, and call-to-action visibility.
+
+Output should look like a human designer made it: elegant, clear, and optimized for the new size.
+
+CURRENT ELEMENTS on canvas:
+${layersList}
+
+From: ${currentSize.width}×${currentSize.height}  
+To: ${newSize.width}×${newSize.height}
 
 🚨 CRITICAL RULE: ALL ${objectsData.length} elements MUST be placed INSIDE the white rectangular canvas area ONLY.
 
@@ -111,12 +123,13 @@ SCALING GUIDELINES:
 - Scale between 0.3 (minimum readable) to 1.5 (maximum)
 - Ensure all elements remain readable and visible
 - Consider visual importance when scaling
+- Maintain visual hierarchy and design principles
 
-YOUR MISSION: Position ALL ${objectsData.length} elements so they create a beautiful design that fits COMPLETELY within the ${newSize.width}×${newSize.height} white canvas.
+YOUR MISSION: Position ALL ${objectsData.length} elements so they create a beautiful, professional design that fits COMPLETELY within the ${newSize.width}×${newSize.height} white canvas while maintaining visual hierarchy and modern design aesthetics.
 
 RESPOND in this exact JSON format with positions for ALL elements:
 {
-  "layoutStrategy": "How I arranged all ${objectsData.length} elements within the white canvas",
+  "layoutStrategy": "How I arranged all ${objectsData.length} elements to maintain visual hierarchy and modern design principles",
   "placements": [
     {
       "id": "obj_0",
@@ -124,10 +137,10 @@ RESPOND in this exact JSON format with positions for ALL elements:
       "top": 60,
       "scaleX": 0.7,
       "scaleY": 0.7,
-      "reasoning": "Position and scale that keeps this element within white canvas boundaries"
+      "reasoning": "Position and scale that maintains visual hierarchy while keeping element within canvas boundaries"
     }
   ],
-  "designRationale": "Why this arrangement keeps all elements within the white canvas and looks good"
+  "designRationale": "Why this arrangement creates an elegant, professional layout optimized for the new size"
 }`
               },
               {

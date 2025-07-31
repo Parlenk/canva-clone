@@ -254,10 +254,16 @@ const buildEditor = ({
           }
         });
 
+        // Force multiple renders to ensure canvas is properly updated
         canvas.renderAll();
-        autoZoom();
-        save();
-        console.log('=== AI-Powered Resize Complete ===');
+        
+        // Add a small delay to ensure rendering is complete before final operations
+        setTimeout(() => {
+          canvas.renderAll();
+          autoZoom();
+          save();
+          console.log('=== AI-Powered Resize Complete ===');
+        }, 50);
       } catch (error) {
         console.error('❌ TRUE AI resize failed - NO FALLBACKS ALLOWED');
         console.error('❌ Error details:', error);

@@ -93,6 +93,25 @@ async function generateTrueAIInstructions(
     
     console.log('✅ Canvas converted successfully for TRUE AI analysis');
     
+    // Step 1.5: Quick API health check
+    console.log('🔍 Checking API endpoint health...');
+    try {
+      const healthResponse = await fetch('/api/ai/test-openai', {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      
+      if (healthResponse.ok) {
+        const healthData = await healthResponse.json();
+        console.log('✅ API endpoint is healthy:', healthData);
+      } else {
+        console.warn('⚠️ API endpoint health check failed:', healthResponse.status);
+      }
+    } catch (healthError) {
+      console.warn('⚠️ API health check failed:', healthError);
+      // Continue anyway - health check is just diagnostic
+    }
+    
     // Step 2: Use Google Vision if available as primary, OpenAI as fallback
     if (useGoogleVision) {
       try {
@@ -139,39 +158,71 @@ async function generateTrueAIInstructions(
     }
     
     // Step 3: Call the OpenAI vision-powered API (PRIMARY - no fallbacks)
-    const response = await fetch('/api/ai/vision-resize', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        canvasImage: canvasImageBase64,
-        currentSize,
-        newSize,
-        objectsData: canvasObjects.map(obj => ({
-          id: obj.id,
-          type: obj.type,
-          left: obj.left,
-          top: obj.top,
-          width: obj.width,
-          height: obj.height,
-          scaleX: obj.scaleX,
-          scaleY: obj.scaleY,
-          text: obj.text,
-        })),
-      }),
-    });
-    
-    if (!response.ok) {
-      console.error('❌ OpenAI Vision API request failed - STOPPING (no fallbacks)');
-      throw new Error(`OpenAI API request failed: ${response.status} - TRUE AI ONLY mode`);
+    console.log('🌐 Making request to /api/ai/vision-resize...');
+    let response;
+    try {
+      response = await fetch('/api/ai/vision-resize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          canvasImage: canvasImageBase64,
+          currentSize,
+          newSize,
+          objectsData: canvasObjects.map(obj => ({
+            id: obj.id,
+            type: obj.type,
+            left: obj.left,
+            top: obj.top,
+            width: obj.width,
+            height: obj.height,
+            scaleX: obj.scaleX,
+            scaleY: obj.scaleY,
+            text: obj.text,
+          })),
+        }),
+      });
+      console.log('📡 API response received:', response.status, response.statusText);
+    } catch (fetchError) {
+      console.error('❌ Network request failed:', fetchError);
+      
+      // Better error message for localhost vs internet issues
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown network error';
+      
+      if (isLocalhost && errorMessage.includes('Failed to fetch')) {
+        throw new Error(`Development server connection failed: ${errorMessage}. The server may have stopped running. Please check if the development server is running on localhost:3000.`);
+      } else {
+        throw new Error(`Network request failed: ${errorMessage}. Please check your internet connection and try again.`);
+      }
     }
     
-    const result = await response.json();
+    if (!response.ok) {
+      let errorDetails = '';
+      try {
+        const errorResponse = await response.text();
+        errorDetails = errorResponse;
+        console.error('❌ API Error Response:', errorDetails);
+      } catch (e) {
+        console.error('❌ Could not read error response');
+      }
+      throw new Error(`API request failed (${response.status} ${response.statusText}): ${errorDetails || 'Unknown server error'}. Please try again.`);
+    }
+    
+    let result;
+    try {
+      result = await response.json();
+      console.log('📊 API Response:', result);
+    } catch (parseError) {
+      console.error('❌ Failed to parse API response:', parseError);
+      throw new Error('Invalid response from AI service. Please try again.');
+    }
     
     if (!result.success) {
-      console.error('❌ OpenAI Vision API failed - STOPPING (no fallbacks)');
-      throw new Error(`OpenAI Vision API failed: ${result.error || 'Unknown error'} - TRUE AI ONLY mode`);
+      const errorMessage = result.error || 'Unknown AI service error';
+      console.error('❌ AI Service Error:', errorMessage);
+      throw new Error(`AI analysis failed: ${errorMessage}. Please try again.`);
     }
     
     console.log('🧠 Direct AI Resize Result:', result.resize);
@@ -182,9 +233,22 @@ async function generateTrueAIInstructions(
       objects: result.placements || []
     };
   } catch (error) {
-    console.error('❌ TRUE AI analysis completely failed - NO FALLBACKS');
-    console.error('❌ This means OpenAI Vision API is not working');
-    throw new Error(`TRUE AI ONLY MODE - Complete failure: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error('❌ AI resize analysis failed');
+    console.error('❌ Error details:', error);
+    
+    // Extract clean error message without repetitive prefixes
+    let cleanErrorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    // Ensure cleanErrorMessage is a string before calling replace
+    if (typeof cleanErrorMessage === 'string') {
+      // Remove redundant "TRUE AI ONLY MODE" prefixes if they exist
+      cleanErrorMessage = cleanErrorMessage.replace(/TRUE AI ONLY MODE[:\s-]*/g, '');
+      cleanErrorMessage = cleanErrorMessage.replace(/Complete failure[:\s-]*/g, '');
+    } else {
+      cleanErrorMessage = 'Unknown error occurred';
+    }
+    
+    throw new Error(`AI resize failed: ${cleanErrorMessage}`);
   }
 }
 
@@ -193,54 +257,76 @@ async function convertCanvasToBase64(canvas: fabric.Canvas): Promise<string> {
     try {
       console.log('🔍 Converting canvas to base64 (canvas-level only)');
       
-      // Store original state
-      const activeObject = canvas.getActiveObject();
-      const workspace = canvas.getObjects().find(obj => obj.name === 'clip');
-      const originalStroke = workspace?.stroke;
+      // Ensure canvas is properly rendered before conversion
+      canvas.renderAll();
       
-      try {
-        // Temporarily hide UI elements for clean capture
-        if (activeObject) {
-          canvas.discardActiveObject();
+      // Wait a small amount to ensure rendering is complete
+      setTimeout(() => {
+        try {
+          // Store original state
+          const activeObject = canvas.getActiveObject();
+          const workspace = canvas.getObjects().find(obj => obj.name === 'clip');
+          const originalStroke = workspace?.stroke;
+          
+          // Temporarily hide UI elements for clean capture
+          if (activeObject) {
+            canvas.discardActiveObject();
+          }
+          
+          if (workspace) {
+            workspace.set({ stroke: 'transparent' });
+          }
+          
+          // Force another render after state changes
+          canvas.renderAll();
+          
+          // Use Fabric.js built-in toDataURL with more robust settings
+          const dataURL = canvas.toDataURL({
+            format: 'png',
+            quality: 0.8, // Increased quality for better AI analysis
+            multiplier: 0.5, // Balanced multiplier
+            enableRetinaScaling: false,
+            left: 0,
+            top: 0,
+            width: canvas.width || 800,
+            height: canvas.height || 600
+          });
+          
+          // Restore original state immediately
+          if (workspace && originalStroke) {
+            workspace.set({ stroke: originalStroke });
+          }
+          if (activeObject) {
+            canvas.setActiveObject(activeObject);
+          }
+          
+          // Force render after restoring state
+          canvas.renderAll();
+          
+          // Validate dataURL format
+          if (!dataURL || !dataURL.startsWith('data:image/')) {
+            throw new Error('Invalid dataURL format - not a valid image');
+          }
+          
+          // Extract base64 data
+          const base64 = dataURL.split(',')[1];
+          if (!base64 || base64.length < 500) {
+            throw new Error('Base64 data too short or missing - canvas may be empty');
+          }
+          
+          console.log('✅ Canvas conversion complete:', {
+            dataURLLength: dataURL.length,
+            base64Length: base64.length,
+            canvasSize: { width: canvas.width, height: canvas.height }
+          });
+          
+          resolve(base64);
+          
+        } catch (conversionError) {
+          console.error('❌ Canvas conversion failed:', conversionError);
+          reject(new Error(`Canvas conversion failed: ${conversionError instanceof Error ? conversionError.message : 'Unknown error'}`));
         }
-        
-        if (workspace) {
-          workspace.set({ stroke: 'transparent' });
-        }
-        
-        // Use Fabric.js built-in toDataURL efficiently
-        const dataURL = canvas.toDataURL({
-          format: 'png',
-          quality: 0.6, // Reduced quality to minimize processing
-          multiplier: 0.3, // Further reduced for faster processing
-          enableRetinaScaling: false,
-          left: 0,
-          top: 0,
-          width: canvas.width,
-          height: canvas.height
-        });
-        
-        // Restore original state immediately
-        if (workspace && originalStroke) {
-          workspace.set({ stroke: originalStroke });
-        }
-        if (activeObject) {
-          canvas.setActiveObject(activeObject);
-        }
-        
-        // Extract base64 data
-        const base64 = dataURL.split(',')[1];
-        if (!base64) {
-          throw new Error('Failed to extract base64 data');
-        }
-        
-        console.log('✅ Canvas conversion complete (optimized size)');
-        resolve(base64);
-        
-      } catch (conversionError) {
-        console.error('❌ Canvas conversion failed - no fallbacks');
-        reject(new Error(`Canvas conversion failed: ${conversionError instanceof Error ? conversionError.message : 'Unknown error'}`));
-      }
+      }, 100); // Small delay to ensure rendering is complete
       
     } catch (error) {
       console.error('❌ Canvas conversion error:', error);
