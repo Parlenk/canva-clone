@@ -27,7 +27,7 @@ const app = new Hono()
         .where(eq(projects.isTemplate, true))
         .limit(limit)
         .offset((page - 1) * limit)
-        .orderBy(asc(projects.isPro), desc(projects.updatedAt));
+        .orderBy(desc(projects.updatedAt));
 
       return ctx.json(data);
     },

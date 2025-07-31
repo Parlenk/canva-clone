@@ -11,7 +11,6 @@ import { ModalProvider } from '@/components/modal-provider';
 import { Providers } from '@/components/providers';
 import { Toaster } from '@/components/ui/sonner';
 import { siteConfig } from '@/config';
-import { SubscriptionAlert } from '@/features/subscriptions/components/subscription-alert';
 import { cn } from '@/lib/utils';
 
 import './globals.css';
@@ -33,7 +32,6 @@ const RootLayout = async ({ children }: Readonly<PropsWithChildren>) => {
             <NextSSRPlugin routerConfig={extractRouterConfig(appFileRouter)} />
             <Toaster theme="light" closeButton richColors />
             <ModalProvider />
-            <SubscriptionAlert />
 
             {children}
           </Providers>

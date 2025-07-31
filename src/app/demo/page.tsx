@@ -36,7 +36,6 @@ const createDemoProject = (width: number, height: number) => ({
   height,
   thumbnailUrl: null,
   isTemplate: false,
-  isPro: false,
   userId: 'demo',
   createdAt: new Date(),
   updatedAt: new Date(),

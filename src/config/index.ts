@@ -33,7 +33,6 @@ export const siteConfig: Metadata = {
 
     'zustand-state-management',
     'infinite-query',
-    'real-time-features',
     'ai-features',
     'ai-background-remover',
     'ai-image-generator',
