@@ -1,6 +1,6 @@
 'use client';
 
-import { ImageIcon, LayoutTemplate, Pencil, Settings, Shapes, Type, MousePointer2 } from 'lucide-react';
+import { ImageIcon, LayoutTemplate, Pencil, Expand, Shapes, Type, MousePointer2 } from 'lucide-react';
 
 import type { ActiveTool } from '@/features/editor/types';
 
@@ -37,7 +37,7 @@ export const Sidebar = ({ activeTool, onChangeActiveTool }: SidebarProps) => {
           onClick={() => onChangeActiveTool('cpa-button')} 
         />
 
-        <SidebarItem icon={Settings} label="Settings" isActive={activeTool === 'settings'} onClick={() => onChangeActiveTool('settings')} />
+        <SidebarItem icon={Expand} label="Resize" isActive={activeTool === 'settings'} onClick={() => onChangeActiveTool('settings')} />
       </ul>
     </aside>
   );

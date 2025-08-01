@@ -13,13 +13,13 @@ import { ColorPicker } from './color-picker';
 import { ToolSidebarClose } from './tool-sidebar-close';
 import { ToolSidebarHeader } from './tool-sidebar-header';
 
-interface SettingsSidebarProps {
+interface ResizeSidebarProps {
   editor: Editor | undefined;
   activeTool: ActiveTool;
   onChangeActiveTool: (tool: ActiveTool) => void;
 }
 
-export const SettingsSidebar = ({ editor, activeTool, onChangeActiveTool }: SettingsSidebarProps) => {
+export const ResizeSidebar = ({ editor, activeTool, onChangeActiveTool }: ResizeSidebarProps) => {
   const workspace = editor?.getWorkspace?.();
 
   const initialWidth = useMemo(() => `${(workspace as any)?.width ?? 400}`, [workspace]);
@@ -151,7 +151,7 @@ export const SettingsSidebar = ({ editor, activeTool, onChangeActiveTool }: Sett
 
   return (
     <aside className={cn('relative z-40 flex h-full w-[360px] flex-col border bg-white', activeTool === 'settings' ? 'visible' : 'hidden')}>
-      <ToolSidebarHeader title="Settings" description="Change the look of your workspace." />
+      <ToolSidebarHeader title="Resize" description="Change the size of your workspace." />
 
       {isAIResizing && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">

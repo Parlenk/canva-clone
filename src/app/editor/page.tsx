@@ -16,7 +16,7 @@ import { ImageSidebar } from '@/features/editor/components/image-sidebar';
 import { Navbar } from '@/features/editor/components/navbar';
 import { CpaButtonSidebar } from '@/features/editor/components/cpa-button-sidebar';
 import { RemoveBgSidebar } from '@/features/editor/components/remove-bg-sidebar';
-import { SettingsSidebar } from '@/features/editor/components/settings-sidebar';
+import { ResizeSidebar } from '@/features/editor/components/resize-sidebar';
 import { ShapeSidebar } from '@/features/editor/components/shape-sidebar';
 import { Sidebar } from '@/features/editor/components/sidebar';
 import { StrokeColorSidebar } from '@/features/editor/components/stroke-color-sidebar';
@@ -262,7 +262,7 @@ const DemoPage = () => {
           onChangeActiveTool={onChangeActiveTool}
         />
 
-        <SettingsSidebar
+        <ResizeSidebar
           editor={editor}
           activeTool={activeTool}
           onChangeActiveTool={onChangeActiveTool}
