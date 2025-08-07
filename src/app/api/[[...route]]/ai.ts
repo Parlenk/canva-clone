@@ -6,6 +6,10 @@ import OpenAI from 'openai';
 
 import { getReplicate } from '@/lib/replicate';
 import { OpenAIVisionService } from '@/features/editor/services/openai-vision';
+import { db } from '@/db/drizzle';
+import { resizeSessions, trainingData } from '@/db/schema';
+import { eq, and, isNotNull, gte, desc, sql } from 'drizzle-orm';
+import { AIResizeTrainingPipeline } from '@/features/editor/services/training-pipeline';
 // import { GoogleVisionService } from '@/features/editor/services/google-vision';
 
 const app = new Hono()
@@ -380,6 +384,401 @@ const app = new Hono()
           errorType: error instanceof Error ? error.constructor.name : 'UnknownError',
           fallback: true
         });
+      }
+    },
+  )
+  .post(
+    '/resize-session',
+    // verifyAuth(), // Temporarily disabled for testing
+    zValidator(
+      'json',
+      z.object({
+        projectId: z.string().optional(),
+        originalCanvas: z.any().refine((val) => val && typeof val === 'object', 'Invalid canvas data'),
+        targetDimensions: z.object({
+          width: z.number().min(100).max(10000),
+          height: z.number().min(100).max(10000),
+        }),
+        aiResult: z.any().optional().default({}),
+        processingTime: z.number().min(0).max(300000), // Max 5 minutes
+        variantId: z.string().optional(),
+        status: z.enum(['completed', 'failed', 'pending']).optional(),
+        errorMessage: z.string().optional(),
+      }),
+    ),
+    async (ctx) => {
+      const session = ctx.get('authUser');
+      // Temporarily allow unauthenticated access for testing
+      const userId = session?.token?.id || 'anonymous-user';
+
+      const data = ctx.req.valid('json');
+
+      // Validate data integrity
+      if (!data.originalCanvas || !data.targetDimensions) {
+        return ctx.json({ error: 'Missing required session data' }, 400);
+      }
+
+      try {
+        // Sanitize JSON data to prevent issues
+        const sanitizedOriginalCanvas = JSON.parse(JSON.stringify(data.originalCanvas));
+        const sanitizedAiResult = JSON.parse(JSON.stringify(data.aiResult || {}));
+
+        const [resizeSession] = await db.insert(resizeSessions).values({
+          userId: userId,
+          projectId: data.projectId || null,
+          originalCanvas: sanitizedOriginalCanvas,
+          targetDimensions: data.targetDimensions,
+          aiResult: sanitizedAiResult,
+          processingTime: Math.max(0, data.processingTime || 0),
+          variantId: data.variantId || null,
+          status: data.status || 'completed',
+          errorMessage: data.errorMessage || null,
+          updatedAt: new Date(),
+        }).returning();
+
+        return ctx.json({ data: resizeSession });
+      } catch (error) {
+        console.error('Failed to create resize session:', error);
+        
+        // Return specific error details for debugging
+        const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+        return ctx.json({ 
+          error: 'Failed to create resize session',
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+        }, 500);
+      }
+    },
+  )
+  .patch(
+    '/resize-session/:id',
+    verifyAuth(),
+    zValidator(
+      'json',
+      z.object({
+        manualCorrections: z.any().optional(),
+      }),
+    ),
+    async (ctx) => {
+      const session = ctx.get('authUser');
+      if (!session.token?.id) {
+        return ctx.json({ error: 'Unauthorized' }, 401);
+      }
+
+      const sessionId = ctx.req.param('id');
+      const data = ctx.req.valid('json');
+
+      try {
+        const [updatedSession] = await db
+          .update(resizeSessions)
+          .set({
+            manualCorrections: data.manualCorrections,
+          })
+          .where(eq(resizeSessions.id, sessionId))
+          .returning();
+
+        return ctx.json({ data: updatedSession });
+      } catch (error) {
+        console.error('Failed to update resize session:', error);
+        return ctx.json({ error: 'Failed to update resize session' }, 500);
+      }
+    },
+  )
+  .post(
+    '/resize-feedback',
+    verifyAuth(),
+    zValidator(
+      'json',
+      z.object({
+        sessionId: z.string().min(1, 'Session ID required'),
+        rating: z.number().int().min(1).max(5),
+        feedbackText: z.string().max(1000).optional(), // Limit text length
+        helpful: z.boolean(),
+      }),
+    ),
+    async (ctx) => {
+      const session = ctx.get('authUser');
+      if (!session.token?.id) {
+        return ctx.json({ error: 'Unauthorized' }, 401);
+      }
+
+      const data = ctx.req.valid('json');
+
+      try {
+        // First check if session exists and belongs to user
+        const existingSession = await db
+          .select({ id: resizeSessions.id, userId: resizeSessions.userId })
+          .from(resizeSessions)
+          .where(eq(resizeSessions.id, data.sessionId))
+          .limit(1);
+
+        if (existingSession.length === 0) {
+          return ctx.json({ error: 'Resize session not found' }, 404);
+        }
+
+        if (existingSession[0].userId !== session.token.id) {
+          return ctx.json({ error: 'Unauthorized - Session belongs to different user' }, 403);
+        }
+
+        // Update the resize session with feedback
+        const [updatedSession] = await db
+          .update(resizeSessions)
+          .set({
+            userRating: data.rating,
+            feedbackText: data.feedbackText?.trim() || null,
+            updatedAt: new Date(),
+          })
+          .where(eq(resizeSessions.id, data.sessionId))
+          .returning();
+
+        if (!updatedSession) {
+          return ctx.json({ error: 'Failed to update session' }, 500);
+        }
+
+        // Create training data entry if rating is good (4-5 stars) or poor (1-2 stars)
+        if (data.rating >= 4 || data.rating <= 2) {
+          try {
+            const qualityScore = Math.max(0, Math.min(1, data.rating / 5.0)); // Ensure 0-1 range
+            
+            // Safely extract features from the resize session
+            const inputFeatures = {
+              originalDimensions: updatedSession.originalCanvas || {},
+              targetDimensions: updatedSession.targetDimensions || {},
+              processingTime: updatedSession.processingTime || 0,
+              helpful: data.helpful,
+              variantId: updatedSession.variantId || 'unknown',
+            };
+
+            await db.insert(trainingData).values({
+              sessionId: data.sessionId,
+              inputFeatures,
+              expectedOutput: updatedSession.aiResult || {},
+              qualityScore,
+              validated: false,
+            });
+          } catch (trainingError) {
+            // Log training data creation error but don't fail the feedback submission
+            console.error('Failed to create training data:', trainingError);
+          }
+        }
+
+        return ctx.json({ 
+          data: updatedSession,
+          message: 'Feedback submitted successfully'
+        });
+      } catch (error) {
+        console.error('Failed to submit feedback:', error);
+        
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return ctx.json({ 
+          error: 'Failed to submit feedback',
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+        }, 500);
+      }
+    },
+  )
+  .post(
+    '/retrain-model',
+    verifyAuth(),
+    zValidator(
+      'json',
+      z.object({
+        days: z.number().optional().default(30),
+        minRating: z.number().optional().default(1),
+        adminKey: z.string().optional(),
+      }),
+    ),
+    async (ctx) => {
+      const session = ctx.get('authUser');
+      const data = ctx.req.valid('json');
+
+      // Enhanced security check
+      if (!process.env.ADMIN_SECRET_KEY) {
+        return ctx.json({ error: 'Admin functionality not configured' }, 503);
+      }
+      
+      if (!data.adminKey || data.adminKey !== process.env.ADMIN_SECRET_KEY) {
+        return ctx.json({ error: 'Unauthorized - Admin access required' }, 401);
+      }
+
+      // Validate parameters
+      if (data.days < 1 || data.days > 365) {
+        return ctx.json({ error: 'Days parameter must be between 1 and 365' }, 400);
+      }
+
+      if (data.minRating < 1 || data.minRating > 5) {
+        return ctx.json({ error: 'Min rating must be between 1 and 5' }, 400);
+      }
+
+      try {
+        console.log('🧠 Starting AI model retraining process...');
+        
+        // 1. Fetch training data from the last N days
+        const cutoffDate = new Date(Date.now() - data.days * 24 * 60 * 60 * 1000);
+        const sessions = await db
+          .select()
+          .from(resizeSessions)
+          .where(
+            and(
+              isNotNull(resizeSessions.userRating),
+              gte(resizeSessions.createdAt, cutoffDate),
+              gte(resizeSessions.userRating, data.minRating)
+            )
+          )
+          .orderBy(desc(resizeSessions.createdAt))
+          .limit(1000); // Limit to prevent memory issues
+
+        if (sessions.length === 0) {
+          return ctx.json({ 
+            message: 'No training data available',
+            sessionsFound: 0 
+          });
+        }
+
+        console.log(`📊 Found ${sessions.length} resize sessions for training`);
+
+        // 2. Convert to training data points
+        const trainingPoints = sessions.map(session => ({
+          inputFeatures: AIResizeTrainingPipeline.extractFeatures(
+            session.originalCanvas, 
+            session.targetDimensions as { width: number; height: number }
+          ),
+          expectedOutput: session.aiResult as { placements: { id: string; left: number; top: number; scaleX: number; scaleY: number; }[]; },
+          userFeedback: {
+            rating: session.userRating!,
+            helpful: session.userRating! >= 4,
+            manualCorrections: session.manualCorrections,
+          },
+          qualityScore: AIResizeTrainingPipeline.calculateQualityScore({
+            rating: session.userRating!,
+            helpful: session.userRating! >= 4,
+            manualCorrections: session.manualCorrections,
+          }),
+        }));
+
+        // 3. Analyze patterns and generate insights
+        const patterns = AIResizeTrainingPipeline.analyzePatterns(trainingPoints);
+        const improvedPrompts = AIResizeTrainingPipeline.generateImprovedPrompts(patterns);
+
+        // 4. Calculate performance metrics
+        const avgQualityScore = trainingPoints.reduce((sum, p) => sum + p.qualityScore, 0) / trainingPoints.length;
+        const highQualityCount = trainingPoints.filter(p => p.qualityScore >= 0.8).length;
+        const lowQualityCount = trainingPoints.filter(p => p.qualityScore <= 0.4).length;
+
+        // 5. Store updated training data
+        const validatedTrainingData = trainingPoints
+          .filter(p => p.qualityScore >= 0.6) // Only use reasonably good examples
+          .map(point => ({
+            sessionId: sessions.find(s => 
+              JSON.stringify(s.originalCanvas) === JSON.stringify(point.expectedOutput)
+            )?.id || '',
+            inputFeatures: point.inputFeatures,
+            expectedOutput: point.expectedOutput,
+            qualityScore: point.qualityScore,
+            validated: true,
+          }));
+
+        // Batch insert training data
+        if (validatedTrainingData.length > 0) {
+          await db.insert(trainingData).values(validatedTrainingData);
+        }
+
+        const retrainingResults = {
+          success: true,
+          timestamp: new Date().toISOString(),
+          metrics: {
+            totalSessions: sessions.length,
+            trainingPoints: trainingPoints.length,
+            validatedPoints: validatedTrainingData.length,
+            avgQualityScore: Math.round(avgQualityScore * 100) / 100,
+            highQualityCount,
+            lowQualityCount,
+            improvementRate: highQualityCount / trainingPoints.length,
+          },
+          patterns: {
+            successful: patterns.successfulScenarios,
+            problematic: patterns.problematicScenarios,
+          },
+          improvedPrompts,
+          recommendations: [
+            avgQualityScore < 0.6 ? 'Consider adjusting AI prompts - low average quality detected' : null,
+            lowQualityCount > trainingPoints.length * 0.3 ? 'High number of poor results - review edge cases' : null,
+            patterns.problematicScenarios.avgComplexity > 0.7 ? 'Complex canvases need better handling' : null,
+          ].filter(Boolean),
+        };
+
+        console.log('✅ AI model retraining completed:', retrainingResults.metrics);
+        
+        return ctx.json(retrainingResults);
+
+      } catch (error) {
+        console.error('❌ Model retraining failed:', error);
+        return ctx.json({ 
+          error: 'Model retraining failed',
+          details: error instanceof Error ? error.message : 'Unknown error'
+        }, 500);
+      }
+    },
+  )
+  .get(
+    '/training-analytics',
+    verifyAuth(),
+    async (ctx) => {
+      try {
+        // Get training statistics
+        const totalSessions = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(resizeSessions);
+
+        const ratedSessions = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(resizeSessions)
+          .where(isNotNull(resizeSessions.userRating));
+
+        const avgRating = await db
+          .select({ avg: sql<number>`avg(user_rating)` })
+          .from(resizeSessions)
+          .where(isNotNull(resizeSessions.userRating));
+
+        const recentSessions = await db
+          .select()
+          .from(resizeSessions)
+          .where(
+            gte(resizeSessions.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+          )
+          .orderBy(desc(resizeSessions.createdAt))
+          .limit(100);
+
+        const analytics = {
+          overview: {
+            totalSessions: totalSessions[0]?.count || 0,
+            ratedSessions: ratedSessions[0]?.count || 0,
+            avgRating: Math.round((avgRating[0]?.avg || 0) * 100) / 100,
+            feedbackRate: totalSessions[0]?.count > 0 
+              ? Math.round((ratedSessions[0]?.count / totalSessions[0]?.count) * 100) 
+              : 0,
+          },
+          recentActivity: recentSessions.map(session => ({
+            id: session.id,
+            rating: session.userRating,
+            processingTime: session.processingTime,
+            createdAt: session.createdAt,
+            hasFeedback: !!session.feedbackText,
+            hasCorrections: !!session.manualCorrections,
+          })),
+          trends: {
+            dailyCount: recentSessions.reduce((acc, session) => {
+              const date = session.createdAt.toISOString().split('T')[0];
+              acc[date] = (acc[date] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>),
+          },
+        };
+
+        return ctx.json(analytics);
+
+      } catch (error) {
+        console.error('Failed to fetch training analytics:', error);
+        return ctx.json({ error: 'Failed to fetch analytics' }, 500);
       }
     },
   );

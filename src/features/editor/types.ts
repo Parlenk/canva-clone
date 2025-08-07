@@ -90,7 +90,8 @@ export type ActiveTool =
   | 'settings'
   | 'remove-bg'
   | 'templates'
-  | 'cpa-button';
+  | 'cpa-button'
+  | 'adobe-ai';
 
 export const FILL_COLOR = 'rgba(0, 0, 0, 1)';
 export const STROKE_COLOR = 'rgba(0, 0, 0, 1)';
@@ -252,6 +253,7 @@ export interface Editor {
   getActiveStrokeColor: () => string;
   getActiveStrokeWidth: () => number;
   getActiveStrokeDashArray: () => number[];
+  importAdobeAI: (canvasData: any) => void;
 
   canvas: fabric.Canvas;
   selectedObjects: fabric.Object[];

@@ -13,19 +13,31 @@ export const useUpdateProject = (id: string) => {
   const mutation = useMutation<ResponseType, Error, RequestType>({
     mutationKey: ['project', id],
     mutationFn: async (json) => {
-      const response = await client.api.projects[':id'].$patch({
-        json,
-        param: {
-          id,
-        },
-      });
+      console.log('🔄 Updating project:', id, json);
+      
+      try {
+        const response = await client.api.projects[':id'].$patch({
+          json,
+          param: {
+            id,
+          },
+        });
 
-      if (!response.ok) {
-        const errorMessage = response.statusText || 'An unknown error occurred.';
-        throw new Error(errorMessage);
+        console.log('📊 Update response status:', response.status, response.statusText);
+
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'Failed to read error response');
+          console.error('❌ Update failed:', response.status, errorText);
+          throw new Error(`Update failed: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Project updated successfully:', result);
+        return result;
+      } catch (error) {
+        console.error('❌ Project update error:', error);
+        throw error;
       }
-
-      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -38,7 +50,7 @@ export const useUpdateProject = (id: string) => {
     },
     onError: (error) => {
       toast.error('Failed to update project!', {
-        description: error.message,
+        description: error?.message || 'An unknown error occurred',
       });
     },
   });

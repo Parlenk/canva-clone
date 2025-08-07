@@ -9,6 +9,7 @@ import { type ActiveTool, selectionDependentTools } from '@/features/editor/type
 import type { ResponseType } from '@/features/projects/api/use-get-project';
 import { useUpdateProject } from '@/features/projects/api/use-update-project';
 
+import { AdobeAISidebar } from './adobe-ai-sidebar';
 import { DrawSidebar } from './draw-sidebar';
 import { FillColorSidebar } from './fill-color-sidebar';
 import { FilterSidebar } from './filter-sidebar';
@@ -60,6 +61,8 @@ export const Editor = ({ initialData }: EditorProps) => {
 
   const onChangeActiveTool = useCallback(
     (tool: ActiveTool) => {
+      console.log('🔧 Changing active tool from', activeTool, 'to', tool);
+      
       if (tool === 'draw') {
         editor?.enableDrawingMode();
       }
@@ -68,9 +71,13 @@ export const Editor = ({ initialData }: EditorProps) => {
         editor?.disableDrawingMode();
       }
 
-      if (tool === activeTool) return setActiveTool('select');
+      if (tool === activeTool) {
+        console.log('🔧 Same tool clicked, switching to select');
+        return setActiveTool('select');
+      }
 
       setActiveTool(tool);
+      console.log('🔧 Active tool set to:', tool);
     },
     [activeTool, editor],
   );
@@ -102,7 +109,7 @@ export const Editor = ({ initialData }: EditorProps) => {
       />
 
       <div className="absolute top-[68px] flex h-[calc(100%_-_68px)] w-full">
-        <Sidebar activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
+        <Sidebar activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} editor={editor} />
         <ShapeSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <FillColorSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <StrokeColorSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
@@ -115,6 +122,7 @@ export const Editor = ({ initialData }: EditorProps) => {
         <RemoveBgSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <DrawSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <ResizeSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
+        <AdobeAISidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <TemplateSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
 
         <main className="relative flex flex-1 flex-col overflow-auto bg-muted">

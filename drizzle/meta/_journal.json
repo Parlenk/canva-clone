@@ -36,6 +36,13 @@
       "when": 1753944010657,
       "tag": "0004_nifty_radioactive_man",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1754053718923,
+      "tag": "0005_premium_talon",
+      "breakpoints": true
     }
   ]
 }

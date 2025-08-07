@@ -240,7 +240,7 @@ async function generateTrueAIInstructions(
     let cleanErrorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     // Ensure cleanErrorMessage is a string before calling replace
-    if (typeof cleanErrorMessage === 'string') {
+    if (typeof cleanErrorMessage === 'string' && cleanErrorMessage) {
       // Remove redundant "TRUE AI ONLY MODE" prefixes if they exist
       cleanErrorMessage = cleanErrorMessage.replace(/TRUE AI ONLY MODE[:\s-]*/g, '');
       cleanErrorMessage = cleanErrorMessage.replace(/Complete failure[:\s-]*/g, '');

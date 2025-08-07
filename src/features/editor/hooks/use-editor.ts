@@ -816,6 +816,22 @@ const buildEditor = ({
 
       return value;
     },
+    importAdobeAI: (canvasData: any) => {
+      try {
+        console.log('🎨 Importing Adobe AI canvas data:', canvasData);
+        
+        // Use loadFromJSON to properly load the canvas data
+        canvas.loadFromJSON(canvasData, () => {
+          console.log('✅ Adobe AI import completed successfully');
+          autoZoom();
+          save();
+        });
+        
+      } catch (error) {
+        console.error('❌ Failed to import Adobe AI data:', error);
+        throw error;
+      }
+    },
 
     canvas,
     selectedObjects,

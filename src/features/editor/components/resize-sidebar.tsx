@@ -8,10 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AILoading } from '@/components/ui/ai-loading';
 import { type ActiveTool, type Editor } from '@/features/editor/types';
 import { cn } from '@/lib/utils';
+import { useCreateResizeSession, useSubmitResizeFeedback } from '@/features/editor/api/use-resize-feedback';
+import { ABTestingService } from '@/features/editor/services/ab-testing';
 
 import { ColorPicker } from './color-picker';
 import { ToolSidebarClose } from './tool-sidebar-close';
 import { ToolSidebarHeader } from './tool-sidebar-header';
+import { ResizeFeedback } from './resize-feedback';
 
 interface ResizeSidebarProps {
   editor: Editor | undefined;
@@ -31,6 +34,12 @@ export const ResizeSidebar = ({ editor, activeTool, onChangeActiveTool }: Resize
   const [background, setBackground] = useState(initialBackground);
   const [resizeMethod, setResizeMethod] = useState<'ai-powered'>('ai-powered');
   const [isAIResizing, setIsAIResizing] = useState(false);
+  const [currentResizeSession, setCurrentResizeSession] = useState<string | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [currentVariantId, setCurrentVariantId] = useState<string | null>(null);
+
+  const createResizeSession = useCreateResizeSession();
+  const submitFeedback = useSubmitResizeFeedback();
 
   useEffect(() => {
     setWidth(initialWidth);
@@ -104,8 +113,20 @@ export const ResizeSidebar = ({ editor, activeTool, onChangeActiveTool }: Resize
 
     // ONLY TRUE AI RESIZE ALLOWED
     if (resizeMethod === 'ai-powered') {
+      const startTime = Date.now();
       try {
         setIsAIResizing(true);
+        
+        // Create training session
+        const originalCanvas = editor?.canvas?.toJSON();
+        const sessionResult = await createResizeSession.mutateAsync({
+          originalCanvas,
+          targetDimensions: newSize,
+          aiResult: {}, // Will be updated after resize
+          processingTime: 0, // Will be updated
+        });
+        
+        setCurrentResizeSession(sessionResult.data.id);
         
         // Use AI-powered resize
         console.log('🤖 Starting AI-powered resize...');
@@ -121,13 +142,29 @@ export const ResizeSidebar = ({ editor, activeTool, onChangeActiveTool }: Resize
         console.log('🔄 Clearing previous state for fresh resize...');
         
         // Execute AI resize
-        await editor.aiPoweredResize(currentSize, newSize);
+        const resizeResult = await editor.aiPoweredResize(currentSize, newSize);
         
         console.log('✅ AI resize completed successfully!');
+        
+        // Extract variant ID if available
+        const variantId = (resizeResult as any)?.variantId || 'unknown';
+        setCurrentVariantId(variantId);
+        
+        // Update session with results
+        const processingTime = Date.now() - startTime;
+        await createResizeSession.mutateAsync({
+          originalCanvas,
+          targetDimensions: newSize,
+          aiResult: resizeResult ?? {},
+          processingTime,
+        });
         
         // Update form values to reflect the new canvas size
         setWidth(newSize.width.toString());
         setHeight(newSize.height.toString());
+        
+        // Show feedback form
+        setShowFeedback(true);
         
       } catch (error) {
         console.error('❌ AI resize failed:', error);
@@ -144,6 +181,39 @@ export const ResizeSidebar = ({ editor, activeTool, onChangeActiveTool }: Resize
         setIsAIResizing(false);
         console.log('🔄 Loading state reset, ready for next resize');
       }
+    }
+  };
+
+  const handleFeedback = async (feedback: { rating: number; feedbackText: string; helpful: boolean }) => {
+    if (!currentResizeSession) {
+      console.error('No current resize session available for feedback');
+      throw new Error('No active session to submit feedback for');
+    }
+    
+    try {
+      await submitFeedback.mutateAsync({
+        sessionId: currentResizeSession,
+        ...feedback,
+      });
+
+      // Record A/B testing metrics (with error handling)
+      if (currentVariantId) {
+        try {
+          ABTestingService.recordMetrics(currentVariantId, feedback.rating, 0);
+          console.log(`📊 Recorded A/B metrics for variant ${currentVariantId}: rating ${feedback.rating}`);
+        } catch (abError) {
+          console.error('Failed to record A/B metrics:', abError);
+          // Don't fail the feedback submission if A/B recording fails
+        }
+      }
+
+      setShowFeedback(false);
+      setCurrentResizeSession(null);
+      setCurrentVariantId(null);
+    } catch (error) {
+      console.error('Failed to submit feedback:', error);
+      // Re-throw to let the feedback component handle the error display
+      throw error;
     }
   };
 
@@ -208,6 +278,15 @@ export const ResizeSidebar = ({ editor, activeTool, onChangeActiveTool }: Resize
             )}
           </Button>
         </form>
+
+        {showFeedback && currentResizeSession && (
+          <div className="border-t p-4">
+            <ResizeFeedback
+              sessionId={currentResizeSession}
+              onSubmitFeedback={handleFeedback}
+            />
+          </div>
+        )}
 
         <div className="border-t p-4">
           <ColorPicker

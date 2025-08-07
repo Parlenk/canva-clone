@@ -13,7 +13,7 @@ Here’s what you need to do:
 Output should look like a human designer made it: elegant, clear, and optimized for the new size.
 
 Original Elements (optional, if you have the breakdown):
-- Background: photo of skincare bottle
+- Background: 
 - Logo: top-left
 - Headline: centered, large font
 - Subtext: under headline

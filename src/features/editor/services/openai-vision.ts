@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { ABTestingService } from './ab-testing';
 
 // Removed CanvasAnalysis interface - using direct resize approach
 
@@ -48,7 +49,7 @@ export class OpenAIVisionService {
     console.log('✅ OpenAI Vision Service initialized successfully');
   }
 
-  // Simplified: Direct resize with single prompt
+  // Direct resize with A/B tested prompts
   async resizeCanvas(
     canvasImageBase64: string,
     currentSize: { width: number; height: number },
@@ -63,16 +64,26 @@ export class OpenAIVisionService {
       scaleX: number;
       scaleY: number;
       text?: string;
-    }>
-  ): Promise<ResizeAnalysis> {
+    }>,
+    userId?: string
+  ): Promise<ResizeAnalysis & { variantId: string }> {
     try {
       if (!this.openai) {
         throw new Error('OpenAI service not initialized (client-side)');
       }
 
-      const layersList = objectsData.map((obj, index) => 
-        `Layer ${index + 1}: ${obj.type}${obj.text ? ` "${obj.text}"` : ''} (${obj.width}×${obj.height} at position ${obj.left},${obj.top})`
-      ).join('\n');
+      // Get A/B test variant for this user
+      const variant = ABTestingService.getVariantForUser(userId || 'anonymous');
+      console.log(`🧪 Using A/B variant: ${variant.id} (${variant.name})`);
+
+      // Generate the prompt using the selected variant
+      const promptText = ABTestingService.generatePrompt(variant.id, {
+        currentWidth: currentSize.width,
+        currentHeight: currentSize.height,
+        newWidth: newSize.width,
+        newHeight: newSize.height,
+        objectsData,
+      });
 
       const response = await this.openai.chat.completions.create({
         model: "gpt-4o-mini", // Cost-effective vision model
@@ -82,29 +93,7 @@ export class OpenAIVisionService {
             content: [
               {
                 type: "text",
-                text: `You are an expert image layout designer powered by AI.
-
-I am giving you an image designed for ${currentSize.width}×${currentSize.height} px. I want you to intelligently resize it to ${newSize.width}×${newSize.height} px.
-
-Here's what you need to do:
-1. Retain visual hierarchy — make sure the product and headline stay prominent.
-2. Reposition elements (logo, text, product) if needed to make it look natural and well-aligned.
-3. Do not distort or stretch. Resize each layer proportionally.
-4. Maintain white space, balance, and overall beauty.
-5. If background doesn't cover fully, extend using smart fill (blur or clone).
-6. Follow modern ad design rules: clarity, contrast, and call-to-action visibility.
-
-Output should look like a human designer made it: elegant, clear, and optimized for the new size.
-
-CURRENT ELEMENTS on canvas:
-${layersList}
-
-From: ${currentSize.width}×${currentSize.height}  
-To: ${newSize.width}×${newSize.height}
-
-🚨 CRITICAL BOUNDARY ENFORCEMENT: ALL ${objectsData.length} elements MUST stay COMPLETELY INSIDE the white canvas boundaries.
-
-⚠️ ZERO TOLERANCE POLICY: Any element placed outside canvas boundaries will BREAK the design.
+                text: `${promptText}
 
 STRICT CANVAS BOUNDARIES:
 • Canvas dimensions: ${newSize.width} × ${newSize.height} pixels
@@ -356,7 +345,10 @@ RESPOND in this exact JSON format with positions for ALL elements:
       result.placements = validatedPlacements;
       result.designRationale = (result.designRationale || '') + ` [Enhanced boundary validation: ${validatedPlacements.length} objects secured within ${newSize.width}×${newSize.height} canvas]`;
       
-      return result;
+      return {
+        ...result,
+        variantId: variant.id,
+      };
     } catch (error) {
       console.error('Error resizing canvas:', error);
       throw error;

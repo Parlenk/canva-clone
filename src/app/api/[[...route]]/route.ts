@@ -5,6 +5,7 @@ import { handle } from 'hono/vercel';
 import authConfig from '@/auth.config';
 
 import ai from './ai';
+import adobeAi from './adobe-ai';
 import images from './images';
 import projects from './projects';
 import users from './users';
@@ -24,6 +25,7 @@ app.use('*', initAuthConfig(getAuthConfig));
 
 const routes = app
   .route('/ai', ai)
+  .route('/adobe-ai', adobeAi)
   .route('/images', images)
   .route('/projects', projects)  
   .route('/users', users);

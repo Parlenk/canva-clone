@@ -1437,3 +1437,222 @@ Warning: CircleSwatch: Support for defaultProps will be removed from function co
     at r3 (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:18890)
     at ServerInsertedHTMLProvider (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:39:24328)
  GET /editor?width=128&height=600 200 in 545ms
+ ✓ Compiled in 400ms (1008 modules)
+ ⨯ Error: Cannot find module './379.js'
+Require stack:
+- /Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js
+- /Users/ensonarantes/Cursorproject/canva-clone/.next/server/app/editor/page.js
+- /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js
+- /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js
+- /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js
+- /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/dev/hot-middleware.js
+- /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/dev/hot-reloader-webpack.js
+- /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-server.js
+- /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/start-server.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1401:15)
+    at /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require-hook.js:55:36
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1057:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1062:22)
+    at Function._load (node:internal/modules/cjs/loader:1211:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1487:12)
+    at mod.require (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:135:16)
+    at __webpack_require__.f.require (/Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js:208:28)
+    at /Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js:116:40
+    at Array.reduce (<anonymous>)
+    at __webpack_require__.e (/Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js:115:67)
+    at Array.map (<anonymous>)
+    at __webpack_require__.X (/Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js:167:22)
+    at /Users/ensonarantes/Cursorproject/canva-clone/.next/server/app/(dashboard)/page.js:1:30240
+    at Object.<anonymous> (/Users/ensonarantes/Cursorproject/canva-clone/.next/server/app/(dashboard)/page.js:1:30306)
+    at Module._compile (node:internal/modules/cjs/loader:1730:14)
+    at Object..js (node:internal/modules/cjs/loader:1895:10)
+    at Module.load (node:internal/modules/cjs/loader:1465:32)
+    at Function._load (node:internal/modules/cjs/loader:1282:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1487:12)
+    at mod.require (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require-hook.js:65:28)
+    at require (node:internal/modules/helpers:135:16)
+    at requirePage (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js:109:84)
+    at /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js:98:84
+    at async loadComponentsImpl (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js:98:26)
+    at async DevServer.findPageComponentsImpl (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/next-server.js:709:36)
+    at async DevServer.findPageComponents (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/dev/next-dev-server.js:577:20)
+    at async DevServer.renderPageComponent (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/base-server.js:1887:24)
+    at async DevServer.renderToResponseImpl (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/base-server.js:1939:32)
+    at async DevServer.pipeImpl (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/base-server.js:914:25)
+    at async NextNodeServer.handleCatchallRenderRequest (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/next-server.js:272:17)
+    at async DevServer.handleRequestImpl (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/base-server.js:810:17)
+    at async /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-server.js:350:24)
+    at async requestHandlerImpl (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [
+    '/Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js',
+    '/Users/ensonarantes/Cursorproject/canva-clone/.next/server/app/editor/page.js',
+    '/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js',
+    '/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js',
+    '/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js',
+    '/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/dev/hot-middleware.js',
+    '/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/dev/hot-reloader-webpack.js',
+    '/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js',
+    '/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-server.js',
+    '/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/start-server.js'
+  ],
+  page: '/'
+}
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 1120ms (2683 modules)
+ GET / 500 in 1229ms
+ GET / 200 in 142ms
+ ✓ Compiled /_not-found in 279ms (2686 modules)
+ GET /_next/static/css/app/layout.css?v=1753953870144 404 in 385ms
+Error: failed to pipe response
+    at et (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:386616)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:549:9)
+    at process.processTimers (node:internal/timers:523:7)
+    at async er.pipeToNodeResponse (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:388065)
+    at async sendRenderResult (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/send-payload.js:120:5)
+    at async DevServer.pipeImpl (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/base-server.js:929:13)
+    at async /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-server.js:365:24)
+    at async requestHandlerImpl (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: TypeError [ERR_INVALID_STATE]: Invalid state: Unable to enqueue
+      at transformStreamDefaultControllerEnqueue (node:internal/webstreams/transformstream:506:11)
+      at TransformStreamDefaultController.enqueue (node:internal/webstreams/transformstream:324:5)
+      at Object.flush (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:376803)
+      at runNextTicks (node:internal/process/task_queues:65:5)
+      at listOnTimeout (node:internal/timers:549:9)
+      at process.processTimers (node:internal/timers:523:7) {
+    code: 'ERR_INVALID_STATE'
+  }
+}
+ GET /_next/static/css/app/(dashboard)/layout.css?v=1753953870144 404 in 386ms
+ GET /_next/static/chunks/main-app.js?v=1753953870144 404 in 34ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 34ms
+ GET /_next/static/chunks/app/(dashboard)/layout.js 404 in 33ms
+ GET /_next/static/chunks/app/layout.js 404 in 33ms
+ GET /_next/static/chunks/app/(dashboard)/page.js 404 in 34ms
+ GET /_next/static/chunks/app/error.js 404 in 15ms
+ GET /_next/static/chunks/app/not-found.js 404 in 17ms
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/get-nonce' in /Users/ensonarantes/Cursorproject/canva-clone/.next/server for build dependencies doesn't lead to expected result '/Users/ensonarantes/Cursorproject/canva-clone/.next/server/vendor-chunks/get-nonce.js', but to 'Error: Can't resolve './vendor-chunks/get-nonce' in '/Users/ensonarantes/Cursorproject/canva-clone/.next/server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/get-nonce (expected /Users/ensonarantes/Cursorproject/canva-clone/.next/server/vendor-chunks/get-nonce.js)
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/.next/server/pages/_error.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/.next/server/pages/_error.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at resolve commonjs /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving '../../../../.next/server/app/demo/page' in /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server for build dependencies doesn't lead to expected result '/Users/ensonarantes/Cursorproject/canva-clone/.next/server/app/demo/page.js', but to 'Error: Can't resolve '../../../../.next/server/app/demo/page' in '/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ../../../../.next/server/app/demo/page (expected /Users/ensonarantes/Cursorproject/canva-clone/.next/server/app/demo/page.js)
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at resolve commonjs /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, lstat '/Users/ensonarantes/Cursorproject/canva-clone/.next/server/vendor-chunks/get-nonce.js'
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/clsx' in /Users/ensonarantes/Cursorproject/canva-clone/.next/server for build dependencies doesn't lead to expected result '/Users/ensonarantes/Cursorproject/canva-clone/.next/server/vendor-chunks/clsx.js', but to 'Error: Can't resolve './vendor-chunks/clsx' in '/Users/ensonarantes/Cursorproject/canva-clone/.next/server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/clsx (expected /Users/ensonarantes/Cursorproject/canva-clone/.next/server/vendor-chunks/clsx.js)
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/.next/server/pages/_error.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/.next/server/pages/_error.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at resolve commonjs /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/zustand' in /Users/ensonarantes/Cursorproject/canva-clone/.next/server for build dependencies doesn't lead to expected result '/Users/ensonarantes/Cursorproject/canva-clone/.next/server/vendor-chunks/zustand.js', but to 'Error: Can't resolve './vendor-chunks/zustand' in '/Users/ensonarantes/Cursorproject/canva-clone/.next/server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/zustand (expected /Users/ensonarantes/Cursorproject/canva-clone/.next/server/vendor-chunks/zustand.js)
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/.next/server/pages/_error.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/.next/server/pages/_error.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at resolve commonjs /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w> [webpack.cache.PackFileCacheStrategy/webpack.FileSystemInfo] Resolving './vendor-chunks/drizzle-zod' in /Users/ensonarantes/Cursorproject/canva-clone/.next/server for build dependencies doesn't lead to expected result '/Users/ensonarantes/Cursorproject/canva-clone/.next/server/vendor-chunks/drizzle-zod.js', but to 'Error: Can't resolve './vendor-chunks/drizzle-zod' in '/Users/ensonarantes/Cursorproject/canva-clone/.next/server'' instead. Resolving dependencies are ignored for this path.
+<w>  at resolve commonjs file ./vendor-chunks/drizzle-zod (expected /Users/ensonarantes/Cursorproject/canva-clone/.next/server/vendor-chunks/drizzle-zod.js)
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/.next/server/webpack-runtime.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/.next/server/pages/_error.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/.next/server/pages/_error.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/require.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/load-components.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/utils.js
+<w>  at file dependencies /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at file /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+<w>  at resolve commonjs /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/build/webpack/loaders/next-route-loader/index.js
+ GET / 200 in 78ms
+ GET /_next/static/css/app/layout.css?v=1753956460242 404 in 28ms
+Error: failed to pipe response
+    at et (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:386616)
+    at runNextTicks (node:internal/process/task_queues:65:5)
+    at listOnTimeout (node:internal/timers:549:9)
+    at process.processTimers (node:internal/timers:523:7)
+    at async er.pipeToNodeResponse (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:388065)
+    at async sendRenderResult (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/send-payload.js:120:5)
+    at async DevServer.pipeImpl (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/base-server.js:929:13)
+    at async /Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/dev/next-dev-server.js:339:20
+    at async Span.traceAsyncFn (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/trace/trace.js:154:20)
+    at async DevServer.handleRequest (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/dev/next-dev-server.js:336:24)
+    at async invokeRender (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-server.js:173:21)
+    at async handleRequest (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-server.js:365:24)
+    at async requestHandlerImpl (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/router-server.js:374:13)
+    at async Server.requestListener (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/server/lib/start-server.js:141:13) {
+  [cause]: TypeError [ERR_INVALID_STATE]: Invalid state: Unable to enqueue
+      at transformStreamDefaultControllerEnqueue (node:internal/webstreams/transformstream:506:11)
+      at TransformStreamDefaultController.enqueue (node:internal/webstreams/transformstream:324:5)
+      at Object.flush (/Users/ensonarantes/Cursorproject/canva-clone/node_modules/next/dist/compiled/next-server/app-page.runtime.dev.js:35:376803)
+      at runNextTicks (node:internal/process/task_queues:65:5)
+      at listOnTimeout (node:internal/timers:549:9)
+      at process.processTimers (node:internal/timers:523:7) {
+    code: 'ERR_INVALID_STATE'
+  }
+}
+ GET /_next/static/css/app/(dashboard)/layout.css?v=1753956460242 404 in 32ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 21ms
+ GET /_next/static/chunks/main-app.js?v=1753956460242 404 in 27ms
+ GET /_next/static/chunks/app/(dashboard)/layout.js 404 in 22ms
+ GET /_next/static/chunks/app/layout.js 404 in 20ms
+ GET /_next/static/chunks/app/(dashboard)/page.js 404 in 22ms
+ GET /_next/static/chunks/app/error.js 404 in 15ms
+ GET /_next/static/chunks/app/not-found.js 404 in 14ms
+[?25h

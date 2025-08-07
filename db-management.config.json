@@ -1,0 +1,75 @@
+{
+  "database": {
+    "connection": {
+      "timeout": 30000,
+      "retries": 3,
+      "poolSize": 10
+    },
+    "healthCheck": {
+      "interval": 300000,
+      "timeout": 5000,
+      "thresholds": {
+        "latency": 1000,
+        "cacheHitRatio": 80,
+        "indexUsage": 70,
+        "bloatPercentage": 10
+      }
+    }
+  },
+  "backup": {
+    "directory": "./backups",
+    "retention": {
+      "daily": 7,
+      "weekly": 4,
+      "monthly": 12
+    },
+    "compression": true,
+    "encryption": false
+  },
+  "seed": {
+    "development": {
+      "users": 10,
+      "projectsPerUser": 20,
+      "templates": 30,
+      "includeAI": true,
+      "includeTrainingData": true
+    },
+    "staging": {
+      "users": 5,
+      "projectsPerUser": 10,
+      "templates": 15,
+      "includeAI": false,
+      "includeTrainingData": false
+    },
+    "production": {
+      "users": 0,
+      "projectsPerUser": 0,
+      "templates": 0,
+      "includeAI": false,
+      "includeTrainingData": false
+    }
+  },
+  "monitoring": {
+    "alerts": {
+      "connectionFailure": true,
+      "highLatency": true,
+      "lowCacheRatio": true,
+      "indexIssues": true,
+      "bloatWarnings": true
+    },
+    "webhooks": {
+      "enabled": false,
+      "url": "",
+      "events": ["health_failure", "migration_error", "backup_failure"]
+    }
+  },
+  "migration": {
+    "autoBackup": true,
+    "rollbackEnabled": true,
+    "validation": {
+      "strict": true,
+      "checkConstraints": true,
+      "checkIndexes": true
+    }
+  }
+}

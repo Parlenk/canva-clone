@@ -10,6 +10,35 @@ import { projects, projectsInsertSchema } from '@/db/schema';
 const app = new Hono()
   .get(
     '/templates',
+    zValidator(
+      'query',
+      z.object({
+        page: z.coerce.number().default(1),
+        limit: z.coerce.number().default(20),
+      }),
+    ),
+    async (ctx) => {
+      try {
+        const { page, limit } = ctx.req.valid('query');
+
+        const data = await db
+          .select()
+          .from(projects)
+          .where(eq(projects.isTemplate, true))
+          .limit(limit)
+          .offset((page - 1) * limit)
+          .orderBy(desc(projects.updatedAt));
+
+        // Return empty array if no templates, instead of error
+        return ctx.json({ data: data || [] });
+      } catch (error) {
+        console.error('Error fetching templates:', error);
+        return ctx.json({ data: [] });
+      }
+    },
+  )
+  .get(
+    '/templates/auth',
     verifyAuth(),
     zValidator(
       'query',
