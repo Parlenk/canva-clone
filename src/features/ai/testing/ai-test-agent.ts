@@ -564,3 +564,4 @@ export async function runAITests(): Promise<TestReport> {
 
 // Export for use in other modules
 export const aiTestSuite = new AITestSuite();
+export { APIMocker };

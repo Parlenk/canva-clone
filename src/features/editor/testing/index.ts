@@ -72,7 +72,7 @@ export class CanvasTestingAgent {
     
     // Run enabled test suites
     for (const [suiteKey, suiteConfig] of Object.entries(finalConfig)) {
-      if (suiteConfig.enabled && this.testSuites[suiteKey]) {
+      if (suiteConfig?.enabled && this.testSuites[suiteKey]) {
         console.log(`\n🧪 Running ${suiteConfig.name} Tests...`);
         
         const startTime = performance.now();
@@ -265,7 +265,7 @@ export class CanvasTestingAgent {
       try {
         resultsDiv.innerHTML = 'Running tests...';
         
-        let results;
+        let results = [];
         switch (type) {
           case 'all':
             results = await agent.runAllTests();

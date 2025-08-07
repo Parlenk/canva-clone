@@ -56,7 +56,7 @@ export const TemplateSidebar = ({ editor, activeTool, onChangeActiveTool }: Temp
         <div className="p-4">
           <div className="grid grid-cols-2 gap-4">
             {data &&
-              data.map((template) => {
+              data.data.map((template) => {
                 return (
                   <button
                     key={template.id}

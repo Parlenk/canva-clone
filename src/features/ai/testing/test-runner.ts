@@ -303,7 +303,8 @@ Examples:
 }
 
 // Export for programmatic use
-export { TestRunner, TestRunnerOptions };
+export { TestRunner };
+export type { TestRunnerOptions };
 
 // Run if called directly
 if (require.main === module) {

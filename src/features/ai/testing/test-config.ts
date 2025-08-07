@@ -351,9 +351,9 @@ export class PerformanceMonitor {
 
   static getAllMetrics() {
     const result: Record<string, any> = {};
-    for (const [name, values] of this.metrics) {
+    this.metrics.forEach((values, name) => {
       result[name] = this.getMetricStats(name);
-    }
+    });
     return result;
   }
 
