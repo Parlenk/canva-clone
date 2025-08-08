@@ -109,7 +109,7 @@ export const Editor = ({ initialData }: EditorProps) => {
       />
 
       <div className="absolute top-[68px] flex h-[calc(100%_-_68px)] w-full">
-        <Sidebar activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} editor={editor} />
+        <Sidebar activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <ShapeSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <FillColorSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
         <StrokeColorSidebar editor={editor} activeTool={activeTool} onChangeActiveTool={onChangeActiveTool} />
