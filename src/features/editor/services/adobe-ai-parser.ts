@@ -245,18 +245,40 @@ export class AdobeAIParser {
   static convertToFabricObjects(parsedData: ParsedAIFile): any[] {
     const fabricObjects: any[] = [];
 
+    console.log('🔄 Converting', parsedData.objects.length, 'AI objects to Fabric.js format...');
+    
     for (const aiObject of parsedData.objects) {
       try {
+        console.log('🔍 Processing AI object:', {
+          id: aiObject.id,
+          type: aiObject.type,
+          coordinates: aiObject.coordinates,
+          fill: aiObject.fill,
+          stroke: aiObject.stroke
+        });
+        
         const fabricObject = this.convertAIObjectToFabric(aiObject, parsedData.metadata);
         if (fabricObject) {
+          console.log('✅ Created Fabric object:', {
+            type: fabricObject.type,
+            left: fabricObject.left,
+            top: fabricObject.top,
+            width: fabricObject.width,
+            height: fabricObject.height,
+            fill: fabricObject.fill,
+            stroke: fabricObject.stroke
+          });
           fabricObjects.push(fabricObject);
+        } else {
+          console.warn('❌ Failed to create Fabric object for:', aiObject.id);
         }
       } catch (error) {
-        console.warn('Failed to convert AI object to Fabric:', error);
+        console.error('❌ Error converting AI object to Fabric:', aiObject.id, error);
       }
     }
 
-    console.log('✅ Converted', fabricObjects.length, 'objects to Fabric.js format');
+    console.log('✅ Successfully converted', fabricObjects.length, 'objects to Fabric.js format');
+    console.log('📋 Final fabric objects:', fabricObjects);
     return fabricObjects;
   }
 
@@ -472,14 +494,43 @@ export class AdobeAIParser {
     // Convert AI coordinates to SVG path
     const pathString = this.coordinatesToSVGPath(aiObject.coordinates);
     
+    // For placeholder objects with rectangle coordinates, create a rectangle instead
+    if (aiObject.coordinates.length === 4 && aiObject.id.includes('placeholder')) {
+      const coords = aiObject.coordinates;
+      const left = Math.min(...coords.map(c => c[0]));
+      const top = Math.min(...coords.map(c => c[1]));
+      const width = Math.max(...coords.map(c => c[0])) - left;
+      const height = Math.max(...coords.map(c => c[1])) - top;
+      
+      return {
+        type: 'rect',
+        left: left,
+        top: top,
+        width: width,
+        height: height,
+        fill: aiObject.fill || '#f0f0f0',
+        stroke: aiObject.stroke || '#cccccc',
+        strokeWidth: aiObject.strokeWidth || 2,
+        opacity: aiObject.opacity || 1,
+        scaleX: 1,
+        scaleY: 1,
+        rx: 5, // Slightly rounded corners
+        ry: 5,
+      };
+    }
+    
+    // For proper paths, ensure visibility
+    const fill = aiObject.fill || (aiObject.stroke ? 'transparent' : '#e0e0e0');
+    const stroke = aiObject.stroke || '#666666';
+    
     return {
       type: 'path',
       path: pathString,
       left: aiObject.coordinates[0]?.[0] || 0,
-      top: metadata.pageSize.height - (aiObject.coordinates[0]?.[1] || 0), // Flip Y coordinate
-      fill: aiObject.fill || 'transparent',
-      stroke: aiObject.stroke || '#000000',
-      strokeWidth: aiObject.strokeWidth || 1,
+      top: aiObject.coordinates[0]?.[1] || 0,
+      fill: fill,
+      stroke: stroke,
+      strokeWidth: aiObject.strokeWidth || 2,
       opacity: aiObject.opacity || 1,
       scaleX: 1,
       scaleY: 1,
@@ -489,15 +540,17 @@ export class AdobeAIParser {
   private static createFabricText(aiObject: AIPathData, metadata: AIFileMetadata): any {
     return {
       type: 'text',
-      text: aiObject.text || '',
-      left: aiObject.coordinates[0]?.[0] || 0,
-      top: metadata.pageSize.height - (aiObject.coordinates[0]?.[1] || 0), // Flip Y coordinate
+      text: aiObject.text || 'Imported Text',
+      left: aiObject.coordinates[0]?.[0] || 100,
+      top: aiObject.coordinates[0]?.[1] || 100,
       fontFamily: aiObject.fontFamily || 'Arial',
-      fontSize: aiObject.fontSize || 12,
-      fill: aiObject.fill || '#000000',
+      fontSize: aiObject.fontSize || 14,
+      fill: aiObject.fill || '#333333',
       opacity: aiObject.opacity || 1,
       scaleX: 1,
       scaleY: 1,
+      textAlign: 'left',
+      fontWeight: 'normal',
     };
   }
 
@@ -517,12 +570,18 @@ export class AdobeAIParser {
   }
 
   private static coordinatesToSVGPath(coordinates: number[][]): string {
-    if (coordinates.length === 0) return '';
+    if (coordinates.length === 0) return 'M 0 0 L 100 0 L 100 100 L 0 100 Z';
+    if (coordinates.length === 1) return `M ${coordinates[0][0]} ${coordinates[0][1]} L ${coordinates[0][0] + 50} ${coordinates[0][1]} L ${coordinates[0][0] + 50} ${coordinates[0][1] + 50} L ${coordinates[0][0]} ${coordinates[0][1] + 50} Z`;
     
     let path = `M ${coordinates[0][0]} ${coordinates[0][1]}`;
     
     for (let i = 1; i < coordinates.length; i++) {
       path += ` L ${coordinates[i][0]} ${coordinates[i][1]}`;
+    }
+    
+    // Close the path if it has multiple points
+    if (coordinates.length > 2) {
+      path += ' Z';
     }
     
     return path;

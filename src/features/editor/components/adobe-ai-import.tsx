@@ -5,17 +5,75 @@ import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { AILoading } from '@/components/ui/ai-loading';
 import { cn } from '@/lib/utils';
-import { 
-  useUploadAdobeAI, 
-  useConvertAdobeAI, 
-  useAdobeAISupportedFeatures,
-  validateAdobeAIFile,
-  extractAIPreview
-} from '@/features/editor/api/use-adobe-ai';
+import { AdobeAIParser } from '@/features/editor/services/adobe-ai-parser';
+
+// Simple validation function
+const validateFile = async (file: File): Promise<{ isValid: boolean; error?: string; warnings?: string[] }> => {
+  const warnings: string[] = [];
+
+  if (!file.name.toLowerCase().endsWith('.ai')) {
+    return { isValid: false, error: 'File must have .ai extension' };
+  }
+
+  if (file.size > 50 * 1024 * 1024) {
+    return { isValid: false, error: 'File size exceeds 50MB limit' };
+  }
+
+  if (file.size < 1024) {
+    return { isValid: false, error: 'File too small to be a valid Adobe AI file' };
+  }
+
+  // Try to validate file format
+  try {
+    const isValid = await AdobeAIParser.isAdobeAIFile(file);
+    if (!isValid) {
+      warnings.push('File format could not be verified, but we\'ll try to import it anyway.');
+    }
+  } catch (error) {
+    warnings.push('Could not validate file structure.');
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    warnings.push('Large file detected. Processing may take some time.');
+  }
+
+  return { isValid: true, warnings: warnings.length > 0 ? warnings : undefined };
+};
+
+// Simple preview extraction
+const extractPreview = async (file: File): Promise<{ metadata: any } | null> => {
+  try {
+    const headerBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(file.slice(0, 5000));
+    });
+
+    const headerText = new TextDecoder().decode(headerBuffer);
+    const metadata: any = { filename: file.name, fileSize: file.size };
+
+    const versionMatch = headerText.match(/Adobe Illustrator\(R\) (\d+\.\d+)/);
+    if (versionMatch) metadata.version = versionMatch[1];
+
+    const titleMatch = headerText.match(/%%Title: (.+)/);
+    if (titleMatch) metadata.title = titleMatch[1].trim();
+
+    const bboxMatch = headerText.match(/%%BoundingBox: (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/);
+    if (bboxMatch) {
+      const left = parseFloat(bboxMatch[1]);
+      const bottom = parseFloat(bboxMatch[2]);
+      const right = parseFloat(bboxMatch[3]);
+      const top = parseFloat(bboxMatch[4]);
+      metadata.dimensions = { width: right - left, height: top - bottom };
+    }
+
+    return { metadata };
+  } catch (error) {
+    return null;
+  }
+};
 
 interface AdobeAIImportProps {
   onImportSuccess: (canvasData: any) => void;
@@ -23,26 +81,11 @@ interface AdobeAIImportProps {
   className?: string;
 }
 
-interface ImportSettings {
-  targetFormat: 'fabric' | 'svg' | 'json';
-  preserveArtboards: boolean;
-  scaleFactor: number;
-}
-
 export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIImportProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileValidation, setFileValidation] = useState<{ isValid: boolean; error?: string; warnings?: string[] } | null>(null);
   const [filePreview, setFilePreview] = useState<{ metadata: any; thumbnail?: string } | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [importSettings, setImportSettings] = useState<ImportSettings>({
-    targetFormat: 'fabric',
-    preserveArtboards: true,
-    scaleFactor: 1,
-  });
-
-  const uploadMutation = useUploadAdobeAI();
-  const convertMutation = useConvertAdobeAI();
-  const { data: supportedFeatures } = useAdobeAISupportedFeatures();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -51,14 +94,22 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
     console.log('📁 Adobe AI file selected:', file.name);
     setSelectedFile(file);
 
-    // Validate file
-    const validation = await validateAdobeAIFile(file);
-    setFileValidation(validation);
+    try {
+      // Basic validation
+      const validation = await validateFile(file);
+      setFileValidation(validation);
 
-    if (validation.isValid) {
-      // Extract preview
-      const preview = await extractAIPreview(file);
-      setFilePreview(preview);
+      if (validation.isValid) {
+        // Quick preview extraction
+        const preview = await extractPreview(file);
+        setFilePreview(preview);
+      }
+    } catch (error) {
+      console.error('File validation failed:', error);
+      setFileValidation({
+        isValid: false,
+        error: 'Failed to validate file'
+      });
     }
   }, []);
 
@@ -78,49 +129,60 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
       return;
     }
 
+    setIsProcessing(true);
+
     try {
       console.log('🚀 Starting Adobe AI import process...');
-      let result;
       
-      if (showAdvanced) {
-        console.log('📋 Using advanced conversion with settings:', importSettings);
-        // Use advanced conversion with settings
-        result = await convertMutation.mutateAsync({
-          file: selectedFile,
-          options: importSettings,
-        });
-      } else {
-        console.log('📋 Using simple upload');
-        // Use simple upload
-        result = await uploadMutation.mutateAsync(selectedFile);
-      }
+      // Use client-side parsing directly
+      const parsed = await AdobeAIParser.parseAIFile(selectedFile);
+      console.log('✅ AI file parsed successfully:', parsed);
+      
+      const canvasData = {
+        version: '1.0',
+        width: parsed.metadata.pageSize.width,
+        height: parsed.metadata.pageSize.height,
+        objects: AdobeAIParser.convertToFabricObjects(parsed),
+        background: '#ffffff',
+        metadata: parsed.metadata
+      };
+      
+      console.log('🎨 Canvas data ready:', canvasData);
+      onImportSuccess(canvasData);
+      onClose?.();
 
-      console.log('✅ Import result:', result);
-
-      if (result.success && result.data?.canvasData) {
-        console.log('🎨 Canvas data received, importing to editor...');
-        onImportSuccess(result.data.canvasData);
-        onClose?.();
-      } else {
-        console.error('❌ Import result missing canvas data:', result);
-        throw new Error('Server returned invalid data format');
-      }
     } catch (error) {
       console.error('❌ Adobe AI import failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
-      // Additional error context
-      if (errorMessage.includes('Network')) {
-        console.error('Network error during upload');
-      } else if (errorMessage.includes('413')) {
-        console.error('File too large for server');
-      } else if (errorMessage.includes('Unauthorized')) {
-        console.error('Authentication failed');
-      }
+      // Provide fallback canvas with error info
+      const fallbackData = {
+        version: '1.0',
+        width: 800,
+        height: 600,
+        objects: [{
+          type: 'text',
+          text: `Adobe AI File: ${selectedFile.name}\n\nFile could not be fully parsed.\nThis canvas is ready for your content.`,
+          left: 100,
+          top: 250,
+          fontSize: 16,
+          fontFamily: 'Arial',
+          fill: '#333333',
+          textAlign: 'left',
+        }],
+        background: '#f9f9f9',
+        metadata: { 
+          filename: selectedFile.name, 
+          source: 'Adobe AI',
+          error: error instanceof Error ? error.message : 'Import failed'
+        }
+      };
+      
+      onImportSuccess(fallbackData);
+      onClose?.();
+    } finally {
+      setIsProcessing(false);
     }
   };
-
-  const isLoading = uploadMutation.isPending || convertMutation.isPending;
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -237,110 +299,28 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
         </div>
       </Card>
 
-      {/* Advanced Settings */}
+      {/* Simple Info */}
       {selectedFile && fileValidation?.isValid && (
-        <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <Settings className="h-5 w-5" />
-              <span className="font-medium">Import Settings</span>
-            </div>
-            <Switch
-              checked={showAdvanced}
-              onCheckedChange={setShowAdvanced}
-            />
-          </div>
-
-          {showAdvanced && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>Target Format</Label>
-                  <Select
-                    value={importSettings.targetFormat}
-                    onValueChange={(value: 'fabric' | 'svg' | 'json') =>
-                      setImportSettings(prev => ({ ...prev, targetFormat: value }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fabric">Fabric.js (Recommended)</SelectItem>
-                      <SelectItem value="svg">SVG</SelectItem>
-                      <SelectItem value="json">JSON</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Scale Factor</Label>
-                  <Select
-                    value={importSettings.scaleFactor.toString()}
-                    onValueChange={(value) =>
-                      setImportSettings(prev => ({ ...prev, scaleFactor: parseFloat(value) }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0.5">50% (Half size)</SelectItem>
-                      <SelectItem value="1">100% (Original)</SelectItem>
-                      <SelectItem value="1.5">150%</SelectItem>
-                      <SelectItem value="2">200% (Double size)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2 flex flex-col justify-end">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="preserve-artboards"
-                      checked={importSettings.preserveArtboards}
-                      onCheckedChange={(checked) =>
-                        setImportSettings(prev => ({ ...prev, preserveArtboards: checked }))
-                      }
-                    />
-                    <Label htmlFor="preserve-artboards" className="text-sm">
-                      Preserve Artboards
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </Card>
-      )}
-
-      {/* Supported Features Info */}
-      {supportedFeatures && (
         <Card className="p-4">
-          <details className="cursor-pointer">
-            <summary className="font-medium mb-2">Supported Features & Limitations</summary>
-            <div className="text-sm space-y-2 text-gray-600">
-              <div>
-                <span className="font-medium text-green-600">Supported:</span>
-                <ul className="list-disc list-inside ml-4 mt-1">
-                  {supportedFeatures.supportedFeatures.basicParsing && <li>Basic path parsing</li>}
-                  {supportedFeatures.supportedFeatures.textExtraction && <li>Text extraction</li>}
-                  {supportedFeatures.supportedFeatures.colorExtraction && <li>Color extraction</li>}
-                  {supportedFeatures.supportedFeatures.artboardSupport && <li>Artboard support</li>}
-                </ul>
-              </div>
-              
-              {supportedFeatures.limitations && supportedFeatures.limitations.length > 0 && (
-                <div>
-                  <span className="font-medium text-yellow-600">Limitations:</span>
-                  <ul className="list-disc list-inside ml-4 mt-1">
-                    {supportedFeatures.limitations.map((limitation: string, index: number) => (
-                      <li key={index}>{limitation}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+          <div className="text-sm space-y-2 text-gray-600">
+            <p className="font-medium mb-2">Import Information</p>
+            <div>
+              <span className="font-medium text-green-600">What's supported:</span>
+              <ul className="list-disc list-inside ml-4 mt-1">
+                <li>Basic shapes and paths</li>
+                <li>Text content</li>
+                <li>Canvas dimensions</li>
+                <li>Basic colors</li>
+              </ul>
             </div>
-          </details>
+            
+            <div>
+              <span className="font-medium text-yellow-600">Note:</span>
+              <p className="ml-4 mt-1">
+                Complex effects, gradients, and embedded images will be simplified or converted to placeholders.
+              </p>
+            </div>
+          </div>
         </Card>
       )}
 
@@ -349,7 +329,7 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
         <Button
           variant="outline"
           onClick={onClose}
-          disabled={isLoading}
+          disabled={isProcessing}
         >
           Cancel
         </Button>
@@ -363,7 +343,7 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
                 setFileValidation(null);
                 setFilePreview(null);
               }}
-              disabled={isLoading}
+              disabled={isProcessing}
             >
               Choose Different File
             </Button>
@@ -371,11 +351,14 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
           
           <Button
             onClick={handleImport}
-            disabled={!selectedFile || !fileValidation?.isValid || isLoading}
+            disabled={!selectedFile || !fileValidation?.isValid || isProcessing}
             className="min-w-[120px]"
           >
-            {isLoading ? (
-              <AILoading text="Importing..." size="sm" />
+            {isProcessing ? (
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                <span>Importing...</span>
+              </div>
             ) : (
               'Import to Canvas'
             )}

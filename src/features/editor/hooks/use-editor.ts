@@ -843,9 +843,28 @@ const buildEditor = ({
         canvas.setWidth(width);
         canvas.setHeight(height);
         
-        // Update workspace size
-        const workspace = getWorkspace();
-        if (workspace) {
+        // Create workspace background if it doesn't exist
+        let workspace = getWorkspace();
+        if (!workspace) {
+          console.log('🎨 Creating new workspace for Adobe AI import');
+          workspace = new fabric.Rect({
+            name: 'clip',
+            width: width,
+            height: height,
+            fill: canvasData.background || '#ffffff',
+            selectable: false,
+            hasControls: false,
+            shadow: new fabric.Shadow({
+              color: 'rgba(0,0,0,0.8)',
+              blur: 5,
+              offsetX: 0,
+              offsetY: 0,
+            }),
+          });
+          canvas.add(workspace);
+          canvas.centerObject(workspace);
+        } else {
+          // Update existing workspace size
           workspace.set({
             width: width,
             height: height
@@ -855,24 +874,56 @@ const buildEditor = ({
         // Load the objects if available
         if (canvasData.objects && Array.isArray(canvasData.objects)) {
           console.log(`📦 Loading ${canvasData.objects.length} objects`);
+          console.log('🔍 Objects to load:', canvasData.objects);
           
-          canvas.loadFromJSON(canvasData, (canvas: fabric.Canvas) => {
-            console.log('✅ Adobe AI objects loaded successfully');
-            
-            // Ensure workspace is at the back
-            const workspace = getWorkspace();
-            if (workspace) {
-              workspace.sendToBack();
+          // Instead of loadFromJSON, manually add objects for better debugging
+          let loadedObjects = 0;
+          
+          for (const objectData of canvasData.objects) {
+            try {
+              console.log('🎯 Creating fabric object:', objectData);
+              
+              let fabricObject;
+              switch (objectData.type) {
+                case 'rect':
+                  fabricObject = new fabric.Rect(objectData);
+                  break;
+                case 'text':
+                  fabricObject = new fabric.Text(objectData.text || 'Imported Text', objectData);
+                  break;
+                case 'path':
+                  fabricObject = new fabric.Path(objectData.path, objectData);
+                  break;
+                default:
+                  console.warn('❓ Unknown object type:', objectData.type);
+                  continue;
+              }
+              
+              if (fabricObject) {
+                console.log('✅ Adding object to canvas:', fabricObject);
+                canvas.add(fabricObject);
+                loadedObjects++;
+              }
+            } catch (error) {
+              console.error('❌ Failed to create object:', objectData, error);
             }
-            
-            // Auto-zoom to fit content
-            autoZoom();
-            
-            // Save the state
-            save();
-            
-            canvas.renderAll();
-          });
+          }
+          
+          console.log(`✅ Successfully loaded ${loadedObjects}/${canvasData.objects.length} objects`);
+          
+          // Ensure workspace is at the back
+          const workspace = getWorkspace();
+          if (workspace) {
+            workspace.sendToBack();
+          }
+          
+          // Auto-zoom to fit content
+          autoZoom();
+          
+          // Save the state
+          save();
+          
+          canvas.renderAll();
         } else {
           console.log('⚠️ No objects found in canvas data, just updating canvas size');
           autoZoom();
