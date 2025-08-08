@@ -201,7 +201,7 @@ export interface Editor {
   zoomOut: () => void;
   changeBackground: (background: string) => void;
   changeSize: (size: { width: number; height: number }) => void;
-  aiPoweredResize: (currentSize: { width: number; height: number }, newSize: { width: number; height: number }) => Promise<void>;
+  aiPoweredResize: (currentSize: { width: number; height: number }, newSize: { width: number; height: number }) => Promise<any>;
   enableDrawingMode: () => void;
   disableDrawingMode: () => void;
   onUndo: () => void;

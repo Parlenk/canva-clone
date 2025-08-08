@@ -265,6 +265,10 @@ const buildEditor = ({
           save();
           console.log('=== AI-Powered Resize Complete ===');
         }, 50);
+
+        // Return the enhanced AI analysis results for UI display
+        return instructions;
+
       } catch (error) {
         console.error('❌ TRUE AI resize failed - NO FALLBACKS ALLOWED');
         console.error('❌ Error details:', error);

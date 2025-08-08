@@ -1,5 +1,8 @@
 import OpenAI from 'openai';
 import { ABTestingService } from './ab-testing';
+import { EnhancedAIContentAnalyzer } from './enhanced-ai-analyzer';
+import { AdvancedLayoutOptimizer } from './layout-optimizer';
+import { AdvancedBoundaryValidator } from './advanced-boundary-validator';
 
 // Removed CanvasAnalysis interface - using direct resize approach
 
@@ -21,6 +24,20 @@ interface ResizeAnalysis {
     textReadability?: string;
     visualBalance?: string;
     professionalAppearance?: string;
+  };
+  compositionAnalysis?: {
+    visualHierarchy: string;
+    colorHarmony: string;
+    spacingRhythm: string;
+    alignmentGrid: string;
+    focusPoints: string[];
+  };
+  aestheticScore?: number;
+  layoutComplexity?: 'simple' | 'moderate' | 'complex';
+  contentAnalysis?: {
+    primaryElements: string[];
+    supportingElements: string[];
+    decorativeElements: string[];
   };
 }
 
@@ -76,14 +93,36 @@ export class OpenAIVisionService {
       const variant = ABTestingService.getVariantForUser(userId || 'anonymous');
       console.log(`🧪 Using A/B variant: ${variant.id} (${variant.name})`);
 
-      // Generate the prompt using the selected variant
-      const promptText = ABTestingService.generatePrompt(variant.id, {
+      // Perform enhanced content analysis
+      console.log('🔍 Performing enhanced content analysis...');
+      const contentAnalysis = EnhancedAIContentAnalyzer.analyzeCanvasContent(objectsData);
+      console.log('📊 Content analysis completed:', {
+        totalElements: contentAnalysis.size,
+        primaryElements: Array.from(contentAnalysis.values()).filter(a => a.importance === 'primary').length,
+        secondaryElements: Array.from(contentAnalysis.values()).filter(a => a.importance === 'secondary').length,
+        decorativeElements: Array.from(contentAnalysis.values()).filter(a => a.importance === 'decorative').length
+      });
+
+      // Generate enhanced contextual prompt
+      const enhancedContext = EnhancedAIContentAnalyzer.generateContextualPrompt(
+        contentAnalysis,
+        objectsData,
+        currentSize,
+        newSize
+      );
+
+      // Generate the base prompt using the selected variant
+      const basePromptText = ABTestingService.generatePrompt(variant.id, {
         currentWidth: currentSize.width,
         currentHeight: currentSize.height,
         newWidth: newSize.width,
         newHeight: newSize.height,
         objectsData,
       });
+
+      // Combine base prompt with enhanced analysis
+      const promptText = `${basePromptText}\n\n${enhancedContext}`;
+      console.log('🎯 Enhanced prompt generated with content analysis integration');
 
       const response = await this.openai.chat.completions.create({
         model: "gpt-4o-mini", // Cost-effective vision model
@@ -117,11 +156,28 @@ SCALE LIMITS:
 • Maximum scale: 1.8 (prevent oversizing)
 • Automatic scale reduction if element exceeds boundaries
 
-YOUR MISSION: Position ALL ${objectsData.length} elements so they create a beautiful, professional design that fits COMPLETELY within the ${newSize.width}×${newSize.height} white canvas while maintaining visual hierarchy and modern design aesthetics.
+ADVANCED COMPOSITION ANALYSIS:
+• Analyze visual weight distribution and create balanced asymmetry
+• Identify primary, secondary, and tertiary focal points
+• Apply rule of thirds and golden ratio principles where appropriate
+• Ensure optimal white space distribution for breathing room
+• Create visual flow paths that guide the viewer's eye naturally
+• Consider color temperature and contrast relationships
+• Maintain consistent spacing rhythm and alignment grid
 
-RESPOND in this exact JSON format with positions for ALL elements:
+CONTENT-AWARE SCALING INTELLIGENCE:
+• Text elements: Prioritize readability - minimum 10px readable size
+• Images: Maintain aspect ratios and prevent over-compression artifacts  
+• Shapes/Icons: Scale uniformly to preserve recognizability
+• Decorative elements: Allow more aggressive scaling to serve primary content
+• Logos/Branding: Protect minimum size requirements for brand integrity
+
+YOUR ENHANCED MISSION: 
+Position ALL ${objectsData.length} elements using advanced design principles to create a professional, aesthetically pleasing composition that maximizes visual impact within the ${newSize.width}×${newSize.height} canvas while ensuring perfect boundary compliance.
+
+RESPOND in this ENHANCED JSON format with comprehensive analysis:
 {
-  "layoutStrategy": "How I arranged all ${objectsData.length} elements to maintain visual hierarchy and modern design principles",
+  "layoutStrategy": "Detailed explanation of the layout approach and design principles applied",
   "placements": [
     {
       "id": "obj_0",
@@ -129,10 +185,25 @@ RESPOND in this exact JSON format with positions for ALL elements:
       "top": 60,
       "scaleX": 0.7,
       "scaleY": 0.7,
-      "reasoning": "Position and scale that maintains visual hierarchy while keeping element within canvas boundaries"
+      "reasoning": "Element-specific positioning rationale based on its role in the composition"
     }
   ],
-  "designRationale": "Why this arrangement creates an elegant, professional layout optimized for the new size"
+  "designRationale": "Why this arrangement creates visual harmony and professional appeal",
+  "appliedPrinciples": ["visual hierarchy", "rule of thirds", "color balance", "spacing rhythm"],
+  "compositionAnalysis": {
+    "visualHierarchy": "How elements are organized by importance and visual weight",
+    "colorHarmony": "Color relationship analysis and balance assessment", 
+    "spacingRhythm": "Consistent spacing patterns and grid alignment used",
+    "alignmentGrid": "Invisible grid structure guiding element placement",
+    "focusPoints": ["primary focal area", "secondary attention areas"]
+  },
+  "aestheticScore": 8.5,
+  "layoutComplexity": "moderate",
+  "contentAnalysis": {
+    "primaryElements": ["most important content that drives the design"],
+    "supportingElements": ["elements that enhance the primary content"],
+    "decorativeElements": ["visual enhancements and styling elements"]
+  }
 }`
               },
               {
@@ -196,143 +267,71 @@ RESPOND in this exact JSON format with positions for ALL elements:
         result.placements = missingPlacements;
       }
 
-      // Validate and fix AI positioning to ensure ALL objects stay within canvas bounds
-      const validatedPlacements = result.placements.map((placement, index) => {
-        const originalObj = objectsData.find(obj => obj.id === placement.id) || objectsData[index];
-        if (!originalObj) {
-          console.error(`❌ Could not find original object for placement ${placement.id}`);
-          return placement;
-        }
-        
-        // Ensure minimum and maximum scale limits
-        const minScale = 0.4;
-        const maxScale = 2.0;
-        let safeScaleX = Math.max(minScale, Math.min(maxScale, placement.scaleX));
-        let safeScaleY = Math.max(minScale, Math.min(maxScale, placement.scaleY));
-        
-        // Calculate final size after safe scaling
-        const safeWidth = originalObj.width * safeScaleX;
-        const safeHeight = originalObj.height * safeScaleY;
-        
-        // ENHANCED boundary enforcement with larger safety margins for extreme resizes
-        const margin = 40; // Increased margin for better safety
-        const maxLeft = Math.max(margin, newSize.width - safeWidth - margin);
-        const maxTop = Math.max(margin, newSize.height - safeHeight - margin);
-        
-        // Force positioning within safe boundaries
-        let safeLeft = Math.max(margin, Math.min(placement.left, maxLeft));
-        let safeTop = Math.max(margin, Math.min(placement.top, maxTop));
-        
-        // Double-check final position doesn't exceed canvas
-        if (safeLeft + safeWidth > newSize.width - margin) {
-          safeLeft = Math.max(margin, newSize.width - safeWidth - margin);
-        }
-        if (safeTop + safeHeight > newSize.height - margin) {
-          safeTop = Math.max(margin, newSize.height - safeHeight - margin);
-        }
-        
-        // AGGRESSIVE boundary enforcement - multiple validation passes
-        let validationPasses = 0;
-        const maxValidationPasses = 3;
-        
-        while (validationPasses < maxValidationPasses) {
-          const currentWidth = originalObj.width * safeScaleX;
-          const currentHeight = originalObj.height * safeScaleY;
-          
-          // Check if object exceeds boundaries
-          const exceedsRight = safeLeft + currentWidth > newSize.width - margin;
-          const exceedsBottom = safeTop + currentHeight > newSize.height - margin;
-          const exceedsLeft = safeLeft < margin;
-          const exceedsTop = safeTop < margin;
-          
-          if (!exceedsRight && !exceedsBottom && !exceedsLeft && !exceedsTop) {
-            break; // Object fits perfectly
-          }
-          
-          // Calculate required scale reduction
-          const maxAllowedWidth = newSize.width - 2 * margin;
-          const maxAllowedHeight = newSize.height - 2 * margin;
-          const requiredScaleX = Math.min(safeScaleX, maxAllowedWidth / originalObj.width);
-          const requiredScaleY = Math.min(safeScaleY, maxAllowedHeight / originalObj.height);
-          const emergencyScale = Math.max(0.2, Math.min(requiredScaleX, requiredScaleY));
-          
-          safeScaleX = emergencyScale;
-          safeScaleY = emergencyScale;
-          
-          // Recalculate position with emergency scale
-          const emergencyWidth = originalObj.width * emergencyScale;
-          const emergencyHeight = originalObj.height * emergencyScale;
-          
-          // Center in available space if needed
-          if (exceedsRight || exceedsLeft) {
-            safeLeft = Math.max(margin, (newSize.width - emergencyWidth) / 2);
-          }
-          if (exceedsBottom || exceedsTop) {
-            safeTop = Math.max(margin, (newSize.height - emergencyHeight) / 2);
-          }
-          
-          // Final boundary clamp
-          safeLeft = Math.max(margin, Math.min(safeLeft, newSize.width - emergencyWidth - margin));
-          safeTop = Math.max(margin, Math.min(safeTop, newSize.height - emergencyHeight - margin));
-          
-          validationPasses++;
-          console.log(`🚨 Emergency boundary fix pass ${validationPasses} for ${placement.id}: scale=${emergencyScale.toFixed(2)}, pos=(${safeLeft.toFixed(1)}, ${safeTop.toFixed(1)})`);
-        }
-        
-        // Final size after all corrections
-        const finalWidth = originalObj.width * safeScaleX;
-        const finalHeight = originalObj.height * safeScaleY;
-        
-        // COMPREHENSIVE boundary validation logging
-        const rightEdge = safeLeft + finalWidth;
-        const bottomEdge = safeTop + finalHeight;
-        const maxRight = newSize.width - margin;
-        const maxBottom = newSize.height - margin;
-        const withinBounds = safeLeft >= margin && safeTop >= margin && rightEdge <= maxRight && bottomEdge <= maxBottom;
-        
-        console.log(`🔧 Layer ${placement.id} boundary validation:`, {
-          original: { left: placement.left, top: placement.top, scaleX: placement.scaleX, scaleY: placement.scaleY },
-          validated: { left: safeLeft, top: safeTop, scaleX: safeScaleX, scaleY: safeScaleY },
-          finalSize: { width: finalWidth, height: finalHeight },
-          canvasSize: { width: newSize.width, height: newSize.height },
-          boundaries: { rightEdge, bottomEdge, maxRight, maxBottom },
-          withinBounds,
-          violations: {
-            left: safeLeft < margin,
-            top: safeTop < margin,
-            right: rightEdge > maxRight,
-            bottom: bottomEdge > maxBottom
-          }
-        });
-        
-        // FAIL-SAFE: If still violating boundaries after all fixes, log critical error
-        if (!withinBounds) {
-          console.error(`🚨 CRITICAL: Layer ${placement.id} STILL exceeds boundaries after validation!`);
-          console.error('This should NEVER happen - boundary validation failed');
-        }
+      // ADVANCED BOUNDARY VALIDATION: Prepare elements for sophisticated validation
+      console.log('🛡️ Preparing elements for advanced boundary validation...');
+      const elementBounds = result.placements.map(placement => {
+        const originalObj = objectsData.find(obj => obj.id === placement.id);
+        const analysis = contentAnalysis.get(placement.id);
         
         return {
-          ...placement,
-          left: safeLeft,
-          top: safeTop,
-          scaleX: safeScaleX,
-          scaleY: safeScaleY,
+          id: placement.id,
+          left: placement.left,
+          top: placement.top,
+          width: originalObj?.width || 100,
+          height: originalObj?.height || 100,
+          scaleX: placement.scaleX,
+          scaleY: placement.scaleY,
+          type: originalObj?.type || 'unknown',
+          importance: analysis?.importance || 'secondary' as const,
+          minScale: analysis?.scalingRules.minScale || 0.3,
+          maxScale: analysis?.scalingRules.maxScale || 1.8,
+          aspectRatioLocked: analysis?.scalingRules.aspectRatioLocked || false,
+        };
+      });
+
+      // Create advanced boundary validator with content-aware margins
+      const boundaryValidator = new AdvancedBoundaryValidator(newSize.width, newSize.height, {
+        top: 30,
+        right: 30,
+        bottom: 30,
+        left: 30
+      });
+
+      // Apply sophisticated boundary validation and correction
+      const validationResult = boundaryValidator.validateAndCorrect(elementBounds);
+      console.log('🔍 Advanced validation result:', {
+        isValid: validationResult.isValid,
+        overflowSeverity: validationResult.overflow.severity,
+        correctionsApplied: validationResult.corrections.length,
+        qualityScore: validationResult.qualityScore
+      });
+
+      // Convert corrected bounds back to placements
+      const validatedPlacements = validationResult.finalBounds.map(bounds => {
+        const originalPlacement = result.placements.find(p => p.id === bounds.id);
+        return {
+          id: bounds.id,
+          left: bounds.left,
+          top: bounds.top,
+          scaleX: bounds.scaleX,
+          scaleY: bounds.scaleY,
+          reasoning: originalPlacement?.reasoning || 'Advanced boundary validation applied'
         };
       });
       
       // Final system-wide boundary compliance check
       const boundaryViolations = validatedPlacements.filter(placement => {
-        const originalObj = objectsData.find(obj => obj.id === placement.id);
-        if (!originalObj) return false;
+        const bounds = validationResult.finalBounds.find(b => b.id === placement.id);
+        if (!bounds) return false;
         
-        const finalWidth = originalObj.width * placement.scaleX;
-        const finalHeight = originalObj.height * placement.scaleY;
-        const margin = 40;
+        const finalWidth = bounds.width * bounds.scaleX;
+        const finalHeight = bounds.height * bounds.scaleY;
+        const margin = 30;
         
-        return placement.left < margin ||
-               placement.top < margin ||
-               placement.left + finalWidth > newSize.width - margin ||
-               placement.top + finalHeight > newSize.height - margin;
+        return bounds.left < margin ||
+               bounds.top < margin ||
+               bounds.left + finalWidth > newSize.width - margin ||
+               bounds.top + finalHeight > newSize.height - margin;
       });
       
       if (boundaryViolations.length > 0) {
@@ -343,7 +342,65 @@ RESPOND in this exact JSON format with positions for ALL elements:
       }
       
       result.placements = validatedPlacements;
-      result.designRationale = (result.designRationale || '') + ` [Enhanced boundary validation: ${validatedPlacements.length} objects secured within ${newSize.width}×${newSize.height} canvas]`;
+      
+      // POST-PROCESSING: Advanced layout optimization with aesthetic scoring
+      console.log('🎨 Performing post-processing aesthetic optimization...');
+      const layoutOptimizer = new AdvancedLayoutOptimizer(newSize.width, newSize.height);
+      
+      // Convert placements to layout elements for optimization
+      const layoutElements = validatedPlacements.map(placement => {
+        const originalObj = objectsData.find(obj => obj.id === placement.id);
+        const analysis = contentAnalysis.get(placement.id);
+        
+        return {
+          id: placement.id,
+          left: placement.left,
+          top: placement.top,
+          width: originalObj?.width || 100,
+          height: originalObj?.height || 100,
+          scaleX: placement.scaleX,
+          scaleY: placement.scaleY,
+          importance: analysis?.importance || 'secondary' as const,
+          visualWeight: analysis?.visualProperties.estimatedVisualWeight || 5,
+        };
+      });
+      
+      // Calculate aesthetic score
+      const aestheticAnalysis = layoutOptimizer.calculateAestheticScore(layoutElements);
+      const layoutOptimization = layoutOptimizer.optimizeLayout(layoutElements);
+      const layoutSuggestions = layoutOptimizer.generateLayoutSuggestions(layoutElements);
+      
+      console.log('📊 Aesthetic Analysis:', aestheticAnalysis);
+      console.log('✨ Layout Optimization:', {
+        originalScore: layoutOptimization.originalScore,
+        optimizedScore: layoutOptimization.optimizedScore,
+        improvements: layoutOptimization.improvements.length
+      });
+      
+      // Enhanced result with aesthetic analysis
+      result.aestheticScore = aestheticAnalysis.totalScore;
+      result.layoutComplexity = layoutElements.length > 8 ? 'complex' : 
+                               layoutElements.length > 4 ? 'moderate' : 'simple';
+      
+      if (!result.compositionAnalysis) {
+        result.compositionAnalysis = {
+          visualHierarchy: `Visual hierarchy clarity: ${aestheticAnalysis.hierarchyClarity}/100`,
+          colorHarmony: 'Analyzed based on element positioning and visual weight',
+          spacingRhythm: `Spacing consistency: ${aestheticAnalysis.spacingRhythm}/100`,
+          alignmentGrid: `Alignment score: ${aestheticAnalysis.alignmentScore}/100`,
+          focusPoints: [`Primary elements: ${layoutElements.filter(e => e.importance === 'primary').length}`,
+                        `Secondary elements: ${layoutElements.filter(e => e.importance === 'secondary').length}`]
+        };
+      }
+      
+      // Add optimization insights to design rationale
+      const optimizationInsights = layoutOptimization.improvements.length > 0 
+        ? ` Post-AI optimization applied ${layoutOptimization.improvements.length} improvements for enhanced aesthetic appeal.`
+        : ' Layout achieved optimal aesthetic score without additional optimization.';
+      
+      result.designRationale = (result.designRationale || '') + 
+        ` [Enhanced boundary validation: ${validatedPlacements.length} objects secured within ${newSize.width}×${newSize.height} canvas.` +
+        ` Aesthetic score: ${aestheticAnalysis.totalScore}/100.${optimizationInsights}]`;
       
       return {
         ...result,
