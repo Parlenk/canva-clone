@@ -1,5 +1,6 @@
 import { fabric } from 'fabric';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import {
   type BuildEditorProps,
@@ -820,16 +821,66 @@ const buildEditor = ({
       try {
         console.log('🎨 Importing Adobe AI canvas data:', canvasData);
         
-        // Use loadFromJSON to properly load the canvas data
-        canvas.loadFromJSON(canvasData, () => {
-          console.log('✅ Adobe AI import completed successfully');
+        // Validate the canvas data structure
+        if (!canvasData || typeof canvasData !== 'object') {
+          throw new Error('Invalid canvas data provided');
+        }
+
+        // Ensure we have proper canvas dimensions
+        const width = canvasData.width || 800;
+        const height = canvasData.height || 600;
+        
+        console.log(`📐 Setting canvas size to ${width}x${height}`);
+        
+        // Clear existing canvas content
+        canvas.clear();
+        
+        // Set canvas dimensions first
+        canvas.setWidth(width);
+        canvas.setHeight(height);
+        
+        // Update workspace size
+        const workspace = getWorkspace();
+        if (workspace) {
+          workspace.set({
+            width: width,
+            height: height
+          });
+        }
+        
+        // Load the objects if available
+        if (canvasData.objects && Array.isArray(canvasData.objects)) {
+          console.log(`📦 Loading ${canvasData.objects.length} objects`);
+          
+          canvas.loadFromJSON(canvasData, (canvas: fabric.Canvas) => {
+            console.log('✅ Adobe AI objects loaded successfully');
+            
+            // Ensure workspace is at the back
+            const workspace = getWorkspace();
+            if (workspace) {
+              workspace.sendToBack();
+            }
+            
+            // Auto-zoom to fit content
+            autoZoom();
+            
+            // Save the state
+            save();
+            
+            canvas.renderAll();
+          });
+        } else {
+          console.log('⚠️ No objects found in canvas data, just updating canvas size');
           autoZoom();
           save();
-        });
+          canvas.renderAll();
+        }
         
       } catch (error) {
         console.error('❌ Failed to import Adobe AI data:', error);
-        throw error;
+        // Don't re-throw to prevent breaking the UI
+        // Instead, show a user-friendly error
+        toast.error('Failed to import AI file. Please try a different file or contact support.');
       }
     },
 

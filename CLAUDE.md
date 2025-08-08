@@ -118,3 +118,38 @@ Required environment variables (see README.md for details):
 - Feature-based structure with co-located API hooks, components, and utilities
 - Shared components in `components/ui/` use Radix + Tailwind
 - External service integrations in `lib/` directory
+
+## New Features (August 2024)
+
+### Adobe AI Import Integration
+**Files Added/Modified:**
+- `src/features/editor/services/adobe-ai-parser.ts` - Adobe AI file parsing service
+- `src/features/editor/components/sidebar.tsx` - Added Adobe AI import button
+- `src/features/editor/components/template-sidebar.tsx` - Fixed template loading issues
+- `src/app/api/[[...route]]/projects.ts` - Made templates endpoint public
+
+**Capabilities:**
+- ✅ Import Adobe Illustrator (.ai) files directly
+- ✅ Support for both PostScript and PDF-based AI formats
+- ✅ Graceful fallback for complex AI features
+- ✅ Drag-and-drop file import
+- ✅ Direct file upload via sidebar button
+- ✅ Error handling with helpful messages
+
+**Usage:**
+1. Click the "Adobe AI" button in the sidebar
+2. Select .ai file from your computer
+3. File is parsed and imported as canvas objects
+4. Use the Resize tool to adjust dimensions
+
+### Template System Fixes
+- ✅ Fixed 401 unauthorized errors on templates endpoint
+- ✅ Templates now load without authentication
+- ✅ Proper error handling for empty template states
+- ✅ Updated response format to match frontend expectations
+
+### Production Deployment
+- ✅ Successfully deployed to Vercel: https://kredimage-kmxwz8dl5-enson-arantes-projects.vercel.app
+- ✅ All TypeScript build issues resolved
+- ✅ Testing files excluded from production build
+- ✅ Database management utilities updated for production

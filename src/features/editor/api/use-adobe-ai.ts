@@ -56,20 +56,26 @@ export const useUploadAdobeAI = () => {
         throw new Error('File size too large. Maximum size is 50MB');
       }
 
-      const formData = new FormData();
-      formData.append('aiFile', file);
-
-      const response = await fetch('/api/adobe-ai/upload', {
-        method: 'POST',
-        body: formData,
+      const response = await client.api['adobe-ai'].upload.$post({
+        form: {
+          aiFile: file,
+        },
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
+        try {
+          const errorData = await response.json() as any;
+          throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
+        } catch (parseError) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
       }
 
-      return response.json();
+      try {
+        return await response.json();
+      } catch (parseError) {
+        throw new Error('Failed to parse server response');
+      }
     },
     onSuccess: (data) => {
       toast.success(`Successfully imported ${data.data.filename}`);
@@ -187,22 +193,29 @@ export const validateAdobeAIFile = async (file: File): Promise<{
     };
   }
 
-  // Try to read first few bytes to check PostScript header
+  // Try to read first few bytes to check file format
   try {
     const headerBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result as ArrayBuffer);
       reader.onerror = () => reject(reader.error);
-      reader.readAsArrayBuffer(file.slice(0, 100));
+      reader.readAsArrayBuffer(file.slice(0, 200));
     });
 
     const headerText = new TextDecoder().decode(headerBuffer);
     
-    if (!headerText.startsWith('%!PS-Adobe')) {
-      return {
-        isValid: false,
-        error: 'File does not appear to be a valid Adobe Illustrator file',
-      };
+    // Check for various AI file format signatures
+    const validSignatures = [
+      '%!PS-Adobe',  // Classic PostScript-based AI
+      '%PDF-',       // PDF-based AI (newer versions)
+      'Adobe',       // General Adobe signature
+    ];
+    
+    const hasValidSignature = validSignatures.some(sig => headerText.includes(sig));
+    
+    if (!hasValidSignature) {
+      // Still allow the file but with a warning
+      warnings.push('File format could not be verified. Import may fail for non-AI files.');
     }
 
     // Check for version information

@@ -73,28 +73,50 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
   });
 
   const handleImport = async () => {
-    if (!selectedFile || !fileValidation?.isValid) return;
+    if (!selectedFile || !fileValidation?.isValid) {
+      console.warn('Cannot import: no file selected or validation failed');
+      return;
+    }
 
     try {
+      console.log('🚀 Starting Adobe AI import process...');
       let result;
       
       if (showAdvanced) {
+        console.log('📋 Using advanced conversion with settings:', importSettings);
         // Use advanced conversion with settings
         result = await convertMutation.mutateAsync({
           file: selectedFile,
           options: importSettings,
         });
       } else {
+        console.log('📋 Using simple upload');
         // Use simple upload
         result = await uploadMutation.mutateAsync(selectedFile);
       }
 
-      if (result.success && result.data.canvasData) {
+      console.log('✅ Import result:', result);
+
+      if (result.success && result.data?.canvasData) {
+        console.log('🎨 Canvas data received, importing to editor...');
         onImportSuccess(result.data.canvasData);
         onClose?.();
+      } else {
+        console.error('❌ Import result missing canvas data:', result);
+        throw new Error('Server returned invalid data format');
       }
     } catch (error) {
-      console.error('Import failed:', error);
+      console.error('❌ Adobe AI import failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      // Additional error context
+      if (errorMessage.includes('Network')) {
+        console.error('Network error during upload');
+      } else if (errorMessage.includes('413')) {
+        console.error('File too large for server');
+      } else if (errorMessage.includes('Unauthorized')) {
+        console.error('Authentication failed');
+      }
     }
   };
 

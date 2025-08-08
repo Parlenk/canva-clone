@@ -21,6 +21,7 @@ interface AIFileMetadata {
     width: number;
     height: number;
   };
+  parsingError?: string;
 }
 
 interface AIPathData {
@@ -70,12 +71,19 @@ export class AdobeAIParser {
         this.AI_HEADER_SIGNATURE, // Classic PostScript
         '%PDF-', // PDF-based AI (common in newer versions)
         '<?xml', // XML-based AI (rare)
-        'Adobe Illustrator' // Direct signature
+        'Adobe Illustrator', // Direct signature
+        'Adobe', // General Adobe signature
+        'AI9' // AI version signature
       ];
       
-      return signatures.some(sig => headerText.includes(sig)) || 
-             headerText.includes('Adobe') || 
-             headerText.includes('Illustrator');
+      const hasValidSignature = signatures.some(sig => headerText.includes(sig));
+      
+      // Also check for binary markers that indicate AI files
+      const binaryMarkers = [0x25, 0x21]; // %!
+      const firstBytes = new Uint8Array(headerBuffer.slice(0, 2));
+      const hasBinaryMarker = firstBytes[0] === binaryMarkers[0] && firstBytes[1] === binaryMarkers[1];
+      
+      return hasValidSignature || hasBinaryMarker;
     } catch (error) {
       console.error('Error checking AI file:', error);
       return false;
@@ -117,16 +125,35 @@ export class AdobeAIParser {
       const artboards = this.parseArtboards(fileContent);
       console.log('🖼️ Found', artboards.length, 'artboards');
 
-      // If no objects found, create basic placeholder
+      // If no objects found, create basic placeholder with canvas size
       if (objects.length === 0) {
         console.log('⚠️ No objects found, creating placeholder');
+        const canvasWidth = metadata.pageSize.width || 800;
+        const canvasHeight = metadata.pageSize.height || 600;
+        
         objects.push({
-          id: 'placeholder',
+          id: 'imported_placeholder',
           type: 'path',
-          coordinates: [[0, 0], [100, 0], [100, 100], [0, 100]],
-          fill: '#e0e0e0',
+          coordinates: [
+            [50, 50], 
+            [canvasWidth - 50, 50], 
+            [canvasWidth - 50, canvasHeight - 50], 
+            [50, canvasHeight - 50]
+          ],
+          fill: 'rgba(240, 240, 240, 0.5)',
           stroke: '#cccccc',
-          strokeWidth: 1
+          strokeWidth: 2
+        });
+        
+        // Add a text placeholder
+        objects.push({
+          id: 'imported_text_placeholder',
+          type: 'text',
+          coordinates: [[canvasWidth / 2, canvasHeight / 2]],
+          text: 'Adobe AI File Imported\n(Visual elements may need manual recreation)',
+          fontSize: 16,
+          fontFamily: 'Arial',
+          fill: '#666666'
         });
       }
 
@@ -139,25 +166,39 @@ export class AdobeAIParser {
     } catch (error) {
       console.error('❌ Failed to parse AI file:', error);
       
-      // Return basic structure for any file
-      console.log('🔄 Returning basic structure for manual processing');
+      // Return basic structure with helpful error info
+      console.log('🔄 Returning basic structure due to parsing error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown parsing error';
+      
       return {
         metadata: {
           version: 'Unknown',
           creator: 'Adobe Illustrator',
           boundingBox: { left: 0, bottom: 0, right: 800, top: 600 },
           pageSize: { width: 800, height: 600 },
+          parsingError: errorMessage,
         },
-        objects: [{
-          id: 'imported_artwork',
-          type: 'path',
-          coordinates: [[0, 0], [800, 0], [800, 600], [0, 600]],
-          fill: '#f5f5f5',
-          stroke: '#ddd',
-          strokeWidth: 1
-        }],
+        objects: [
+          {
+            id: 'error_placeholder_bg',
+            type: 'path',
+            coordinates: [[50, 50], [750, 50], [750, 550], [50, 550]],
+            fill: '#fff3cd',
+            stroke: '#ffeaa7',
+            strokeWidth: 2
+          },
+          {
+            id: 'error_placeholder_text',
+            type: 'text',
+            coordinates: [[400, 250]],
+            text: `AI File Import Notice\n\nFile: ${file?.name || 'Unknown'}\nThe file could not be fully parsed.\n\nError: ${errorMessage}\n\nYou can still use this canvas and add elements manually.`,
+            fontSize: 14,
+            fontFamily: 'Arial',
+            fill: '#856404'
+          }
+        ],
         artboards: [{
-          name: 'Artboard 1',
+          name: 'Default Artboard',
           bounds: { x: 0, y: 0, width: 800, height: 600 }
         }]
       };

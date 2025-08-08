@@ -39,9 +39,13 @@ const app = new Hono()
         const fileBuffer = await file.arrayBuffer();
         const fileContent = new TextDecoder().decode(fileBuffer);
 
-        // Basic AI file validation
-        if (!fileContent.startsWith('%!PS-Adobe')) {
-          return ctx.json({ error: 'Invalid Adobe AI file format' }, 400);
+        // Enhanced AI file validation
+        const validSignatures = ['%!PS-Adobe', '%PDF-', 'Adobe'];
+        const hasValidSignature = validSignatures.some(sig => fileContent.includes(sig));
+        
+        if (!hasValidSignature) {
+          console.warn('⚠️ File signature not recognized, proceeding with caution');
+          // Don't fail here - let the parser try anyway
         }
 
         // Parse metadata from AI file
@@ -69,10 +73,31 @@ const app = new Hono()
         console.error('❌ Adobe AI file processing failed:', error);
         
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        
+        // Provide more specific error messages
+        let userMessage = 'Failed to process Adobe AI file';
+        let statusCode = 500;
+        
+        if (errorMessage.includes('decode')) {
+          userMessage = 'File appears to be corrupted or in an unsupported format';
+          statusCode = 400;
+        } else if (errorMessage.includes('memory') || errorMessage.includes('size')) {
+          userMessage = 'File is too large or complex to process';
+          statusCode = 413;
+        } else if (errorMessage.includes('timeout')) {
+          userMessage = 'File processing timed out. Please try a smaller file';
+          statusCode = 408;
+        }
+        
         return ctx.json({
-          error: 'Failed to process Adobe AI file',
-          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-        }, 500);
+          error: userMessage,
+          details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+          suggestions: [
+            'Try exporting the file as SVG from Adobe Illustrator',
+            'Simplify the artwork and reduce the number of objects',
+            'Use a smaller file size (under 10MB recommended)'
+          ]
+        }, statusCode as 400 | 413 | 408 | 500);
       }
     },
   )
@@ -106,9 +131,13 @@ const app = new Hono()
         const buffer = Buffer.from(fileData, 'base64');
         const fileContent = buffer.toString('utf-8');
 
-        // Validate AI file
-        if (!fileContent.startsWith('%!PS-Adobe')) {
-          return ctx.json({ error: 'Invalid Adobe AI file' }, 400);
+        // Validate AI file with enhanced checks
+        const validSignatures = ['%!PS-Adobe', '%PDF-', 'Adobe'];
+        const hasValidSignature = validSignatures.some(sig => fileContent.includes(sig));
+        
+        if (!hasValidSignature) {
+          console.warn('⚠️ Server conversion: File signature not recognized, proceeding with caution');
+          // Don't fail here - let the parser try anyway
         }
 
         // Advanced conversion logic would go here
