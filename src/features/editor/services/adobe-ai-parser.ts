@@ -48,6 +48,7 @@ interface ParsedAIFile {
 }
 
 export class AdobeAIParser {
+  // Cache busting version 2025-08-10-v3
   private static readonly AI_HEADER_SIGNATURE = '%!PS-Adobe';
   private static readonly AI_VERSION_PATTERN = /%%Creator: Adobe Illustrator\(R\) (\d+\.\d+)/;
   private static readonly BOUNDING_BOX_PATTERN = /%%BoundingBox: (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/;
@@ -95,7 +96,7 @@ export class AdobeAIParser {
    */
   static async parseAIFile(file: File): Promise<ParsedAIFile> {
     try {
-      console.log('🎨 Starting Adobe AI file parsing...');
+      console.log('🎨 Starting Adobe AI file parsing... [CACHE-BUST v3]');
       
       // Validate file
       if (!await this.isAdobeAIFile(file)) {
