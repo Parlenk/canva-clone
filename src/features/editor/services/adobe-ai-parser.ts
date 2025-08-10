@@ -211,13 +211,17 @@ export class AdobeAIParser {
   private static parsePDFBasedAI(content: string): ParsedAIFile {
     console.log('🔍 Attempting to parse PDF-based AI structure...');
     
-    // Basic PDF structure detection
-    const widthMatch = content.match(/MediaBox\s*\[\s*\d+\s+\d+\s+(\d+)\s+(\d+)\s*\]/);
-    const width = widthMatch ? parseInt(widthMatch[1]) : 800;
-    const height = widthMatch ? parseInt(widthMatch[2]) : 600;
+    // Force reasonable canvas dimensions instead of using PDF dimensions
+    // PDF dimensions (like 612x792) are too large for web canvas
+    const width = 800;  // Fixed reasonable width
+    const height = 600; // Fixed reasonable height
+
+    console.log(`📏 Using fixed canvas dimensions: ${width}x${height} (ignoring PDF MediaBox)`);
 
     // Create more sophisticated placeholder objects
     const objects: AIPathData[] = [];
+    
+    console.log('🔧 Creating multiple placeholder objects for PDF-based AI file...');
 
     // Add a background rectangle (smaller and more visible)
     objects.push({
@@ -259,6 +263,8 @@ export class AdobeAIParser {
       stroke: '#0056b3',
       strokeWidth: 1
     });
+
+    console.log(`✅ Created ${objects.length} placeholder objects:`, objects.map(o => ({ id: o.id, type: o.type, coords: o.coordinates })));
 
     return {
       metadata: {
@@ -532,7 +538,7 @@ export class AdobeAIParser {
     const pathString = this.coordinatesToSVGPath(aiObject.coordinates);
     
     // For placeholder objects with rectangle coordinates, create a rectangle instead
-    if (aiObject.coordinates.length === 4 && aiObject.id.includes('placeholder')) {
+    if (aiObject.coordinates.length === 4 && (aiObject.id.includes('placeholder') || aiObject.id.includes('pdf_background') || aiObject.id.includes('pdf_indicator'))) {
       const coords = aiObject.coordinates;
       const left = Math.min(...coords.map(c => c[0]));
       const top = Math.min(...coords.map(c => c[1]));
