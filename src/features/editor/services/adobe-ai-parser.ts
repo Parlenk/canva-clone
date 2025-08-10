@@ -111,7 +111,10 @@ export class AdobeAIParser {
       // Check if it's PDF-based AI
       if (fileContent.includes('%PDF-')) {
         console.log('📄 Detected PDF-based AI file');
-        return this.parsePDFBasedAI(fileContent);
+        console.log('🔥 CALLING parsePDFBasedAI - SHOULD CREATE 4 OBJECTS!');
+        const result = this.parsePDFBasedAI(fileContent);
+        console.log('🔥 parsePDFBasedAI RESULT:', result);
+        return result;
       }
 
       // Parse metadata
