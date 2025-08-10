@@ -213,8 +213,52 @@ export class AdobeAIParser {
     
     // Basic PDF structure detection
     const widthMatch = content.match(/MediaBox\s*\[\s*\d+\s+\d+\s+(\d+)\s+(\d+)\s*\]/);
-    const width = widthMatch ? parseInt(widthMatch[1]) : 612;
-    const height = widthMatch ? parseInt(widthMatch[2]) : 792;
+    const width = widthMatch ? parseInt(widthMatch[1]) : 800;
+    const height = widthMatch ? parseInt(widthMatch[2]) : 600;
+
+    // Create more sophisticated placeholder objects
+    const objects: AIPathData[] = [];
+
+    // Add a background rectangle (smaller and more visible)
+    objects.push({
+      id: 'pdf_background',
+      type: 'path',
+      coordinates: [[50, 50], [width - 50, 50], [width - 50, height - 50], [50, height - 50]],
+      fill: '#f8f9fa',
+      stroke: '#dee2e6',
+      strokeWidth: 2
+    });
+
+    // Add informative text
+    objects.push({
+      id: 'pdf_info_text',
+      type: 'text',
+      coordinates: [[width / 2, height / 2 - 40]],
+      text: 'Adobe AI File Imported',
+      fontSize: 18,
+      fontFamily: 'Arial',
+      fill: '#495057'
+    });
+
+    objects.push({
+      id: 'pdf_details_text',
+      type: 'text',
+      coordinates: [[width / 2, height / 2]],
+      text: 'PDF-based AI format detected\nSome visual elements may need\nmanual recreation',
+      fontSize: 14,
+      fontFamily: 'Arial',
+      fill: '#6c757d'
+    });
+
+    // Add a visual indicator shape
+    objects.push({
+      id: 'pdf_indicator',
+      type: 'path',
+      coordinates: [[width / 2 - 30, height / 2 + 40], [width / 2 + 30, height / 2 + 40], [width / 2 + 30, height / 2 + 70], [width / 2 - 30, height / 2 + 70]],
+      fill: '#007bff',
+      stroke: '#0056b3',
+      strokeWidth: 1
+    });
 
     return {
       metadata: {
@@ -224,14 +268,7 @@ export class AdobeAIParser {
         boundingBox: { left: 0, bottom: 0, right: width, top: height },
         pageSize: { width, height },
       },
-      objects: [{
-        id: 'pdf_placeholder',
-        type: 'path',
-        coordinates: [[0, 0], [width, 0], [width, height], [0, height]],
-        fill: '#f0f0f0',
-        stroke: '#ccc',
-        strokeWidth: 1
-      }],
+      objects,
       artboards: [{
         name: 'Main Artboard',
         bounds: { x: 0, y: 0, width, height }
@@ -538,6 +575,9 @@ export class AdobeAIParser {
   }
 
   private static createFabricText(aiObject: AIPathData, metadata: AIFileMetadata): any {
+    // Handle multi-line text by centering properly
+    const isMultiLine = aiObject.text?.includes('\n') || false;
+    
     return {
       type: 'text',
       text: aiObject.text || 'Imported Text',
@@ -549,8 +589,10 @@ export class AdobeAIParser {
       opacity: aiObject.opacity || 1,
       scaleX: 1,
       scaleY: 1,
-      textAlign: 'left',
+      textAlign: isMultiLine ? 'center' : 'left',
       fontWeight: 'normal',
+      originX: isMultiLine ? 'center' : 'left',
+      originY: isMultiLine ? 'center' : 'top',
     };
   }
 
