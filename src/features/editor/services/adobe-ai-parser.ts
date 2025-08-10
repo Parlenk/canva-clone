@@ -111,10 +111,49 @@ export class AdobeAIParser {
       // Check if it's PDF-based AI
       if (fileContent.includes('%PDF-')) {
         console.log('📄 Detected PDF-based AI file');
-        console.log('🔥 CALLING parsePDFBasedAI - SHOULD CREATE 4 OBJECTS!');
-        const result = this.parsePDFBasedAI(fileContent);
-        console.log('🔥 parsePDFBasedAI RESULT:', result);
-        return result;
+        console.log('🔥 FORCE TEST MODE: Creating simple visible objects directly');
+        
+        // BYPASS PARSER - CREATE SIMPLE TEST OBJECTS DIRECTLY
+        return {
+          metadata: {
+            version: 'FORCE-TEST-v1',
+            creator: 'Adobe Illustrator',
+            title: 'TEST MODE - DIRECT OBJECTS',
+            boundingBox: { left: 0, bottom: 0, right: 800, top: 600 },
+            pageSize: { width: 800, height: 600 },
+          },
+          objects: [
+            {
+              id: 'test_rect_1',
+              type: 'path',
+              coordinates: [[100, 100], [300, 100], [300, 200], [100, 200]],
+              fill: '#ff0000',
+              stroke: '#000000',
+              strokeWidth: 2
+            },
+            {
+              id: 'test_rect_2', 
+              type: 'path',
+              coordinates: [[400, 150], [600, 150], [600, 250], [400, 250]],
+              fill: '#00ff00',
+              stroke: '#000000',
+              strokeWidth: 2
+            },
+            {
+              id: 'test_text',
+              type: 'text',
+              coordinates: [[400, 350]],
+              text: 'ADOBE AI IMPORT TEST - SUCCESS!',
+              fontSize: 20,
+              fontFamily: 'Arial',
+              fill: '#0000ff'
+            }
+          ],
+          artboards: [{
+            name: 'Test Artboard',
+            bounds: { x: 0, y: 0, width: 800, height: 600 }
+          }]
+        };
       }
 
       // Parse metadata
