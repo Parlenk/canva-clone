@@ -21,14 +21,27 @@ export const AdobeAISidebar = ({ activeTool, onChangeActiveTool, editor }: Adobe
   };
 
   const onImportSuccess = (canvasData: any) => {
-    if (!editor) return;
+    console.log('🎯 [STEP 1] onImportSuccess called with data:', canvasData);
+    console.log('🎯 [STEP 2] Editor available?', !!editor);
+    
+    if (!editor) {
+      console.error('❌ [STEP 2] No editor available!');
+      return;
+    }
+
+    console.log('🎯 [STEP 3] Calling editor.importAdobeAI with:', {
+      width: canvasData.width,
+      height: canvasData.height,
+      objectsCount: canvasData.objects?.length,
+      objects: canvasData.objects
+    });
 
     try {
       // Import the Adobe AI canvas data using the specialized method
       editor.importAdobeAI(canvasData);
-      console.log('✅ Adobe AI file successfully imported to canvas');
+      console.log('✅ [STEP 4] Adobe AI file successfully imported to canvas');
     } catch (error) {
-      console.error('❌ Failed to import Adobe AI file to canvas:', error);
+      console.error('❌ [STEP 4] Failed to import Adobe AI file to canvas:', error);
     }
   };
 

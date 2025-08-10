@@ -823,12 +823,16 @@ const buildEditor = ({
     },
     importAdobeAI: (canvasData: any) => {
       try {
-        console.log('🎨 Importing Adobe AI canvas data:', canvasData);
+        console.log('🎯 [STEP 5] importAdobeAI called with canvas data:', canvasData);
+        console.log('🎯 [STEP 6] Canvas available?', !!canvas);
         
         // Validate the canvas data structure
         if (!canvasData || typeof canvasData !== 'object') {
+          console.error('❌ [STEP 6] Invalid canvas data provided');
           throw new Error('Invalid canvas data provided');
         }
+        
+        console.log('🎯 [STEP 7] Canvas data validation passed');
 
         // Ensure we have proper canvas dimensions
         const width = canvasData.width || 800;
@@ -871,10 +875,12 @@ const buildEditor = ({
           });
         }
         
+        console.log('🎯 [STEP 8] Setting canvas dimensions and clearing canvas');
+
         // Load the objects if available
         if (canvasData.objects && Array.isArray(canvasData.objects)) {
-          console.log(`📦 Loading ${canvasData.objects.length} objects`);
-          console.log('🔍 Objects to load:', canvasData.objects);
+          console.log(`🎯 [STEP 9] Loading ${canvasData.objects.length} objects`);
+          console.log('🎯 [STEP 10] Objects to load:', canvasData.objects);
           
           // Instead of loadFromJSON, manually add objects for better debugging
           let loadedObjects = 0;
@@ -900,23 +906,29 @@ const buildEditor = ({
               }
               
               if (fabricObject) {
-                console.log('✅ Adding object to canvas:', fabricObject);
+                console.log('🎯 [STEP 11] Adding object to canvas:', fabricObject);
                 canvas.add(fabricObject);
                 loadedObjects++;
+                console.log('🎯 [STEP 12] Current canvas object count:', canvas.getObjects().length);
+              } else {
+                console.warn('❌ [STEP 11] Failed to create fabric object from:', objectData);
               }
             } catch (error) {
               console.error('❌ Failed to create object:', objectData, error);
             }
           }
           
-          console.log(`✅ Successfully loaded ${loadedObjects}/${canvasData.objects.length} objects`);
+          console.log(`🎯 [STEP 13] Successfully loaded ${loadedObjects}/${canvasData.objects.length} objects`);
+          console.log('🎯 [STEP 14] Final canvas objects:', canvas.getObjects().map(o => ({ type: o.type, id: o.id || 'no-id' })));
           
           // Ensure workspace is at the back
           const workspace = getWorkspace();
           if (workspace) {
+            console.log('🎯 [STEP 15] Sending workspace to back');
             workspace.sendToBack();
           }
           
+          console.log('🎯 [STEP 16] Auto-zooming and rendering canvas');
           // Auto-zoom to fit content
           autoZoom();
           
@@ -924,6 +936,7 @@ const buildEditor = ({
           save();
           
           canvas.renderAll();
+          console.log('🎯 [STEP 17] Canvas render complete');
         } else {
           console.log('⚠️ No objects found in canvas data, just updating canvas size');
           autoZoom();
