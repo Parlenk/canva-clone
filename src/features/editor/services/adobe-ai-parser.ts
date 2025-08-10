@@ -210,6 +210,7 @@ export class AdobeAIParser {
    */
   private static parsePDFBasedAI(content: string): ParsedAIFile {
     console.log('🔍 Attempting to parse PDF-based AI structure...');
+    console.log('🚀 DEBUG MARKER: UPDATED PARSER v2.0 - SHOULD CREATE 4 OBJECTS');
     
     // Force reasonable canvas dimensions instead of using PDF dimensions
     // PDF dimensions (like 612x792) are too large for web canvas
