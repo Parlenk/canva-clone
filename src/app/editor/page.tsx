@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { useEditor } from '@/features/editor/hooks/use-editor';
 import { type ActiveTool, selectionDependentTools } from '@/features/editor/types';
 
+import { AdobeAISidebar } from '@/features/editor/components/adobe-ai-sidebar';
 import { DrawSidebar } from '@/features/editor/components/draw-sidebar';
 import { FillColorSidebar } from '@/features/editor/components/fill-color-sidebar';
 import { FilterSidebar } from '@/features/editor/components/filter-sidebar';
@@ -305,6 +306,12 @@ const DemoPage = () => {
         />
 
         <CpaButtonSidebar
+          editor={editor}
+          activeTool={activeTool}
+          onChangeActiveTool={onChangeActiveTool}
+        />
+
+        <AdobeAISidebar
           editor={editor}
           activeTool={activeTool}
           onChangeActiveTool={onChangeActiveTool}
