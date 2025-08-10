@@ -885,19 +885,23 @@ const buildEditor = ({
           // Instead of loadFromJSON, manually add objects for better debugging
           let loadedObjects = 0;
           
-          for (const objectData of canvasData.objects) {
+          for (let i = 0; i < canvasData.objects.length; i++) {
+            const objectData = canvasData.objects[i];
             try {
-              console.log('🎯 Creating fabric object:', objectData);
+              console.log(`🎯 [STEP 10.${i + 1}] Creating fabric object ${i + 1}/${canvasData.objects.length}:`, objectData);
               
               let fabricObject;
               switch (objectData.type) {
                 case 'rect':
+                  console.log(`🎯 Creating fabric.Rect with:`, objectData);
                   fabricObject = new fabric.Rect(objectData);
                   break;
                 case 'text':
+                  console.log(`🎯 Creating fabric.Text with:`, objectData);
                   fabricObject = new fabric.Text(objectData.text || 'Imported Text', objectData);
                   break;
                 case 'path':
+                  console.log(`🎯 Creating fabric.Path with:`, objectData);
                   fabricObject = new fabric.Path(objectData.path, objectData);
                   break;
                 default:
@@ -906,10 +910,18 @@ const buildEditor = ({
               }
               
               if (fabricObject) {
-                console.log('🎯 [STEP 11] Adding object to canvas:', fabricObject);
+                console.log('🎯 [STEP 11] Successfully created fabric object:', {
+                  type: fabricObject.type,
+                  left: fabricObject.left,
+                  top: fabricObject.top,
+                  width: fabricObject.width,
+                  height: fabricObject.height
+                });
+                console.log('🎯 [STEP 12] Adding to canvas...');
                 canvas.add(fabricObject);
                 loadedObjects++;
-                console.log('🎯 [STEP 12] Current canvas object count:', canvas.getObjects().length);
+                console.log('🎯 [STEP 13] Current canvas object count:', canvas.getObjects().length);
+                console.log('🎯 [STEP 14] Canvas objects:', canvas.getObjects().map(o => ({ type: o.type, id: o.id || 'no-id' })));
               } else {
                 console.warn('❌ [STEP 11] Failed to create fabric object from:', objectData);
               }

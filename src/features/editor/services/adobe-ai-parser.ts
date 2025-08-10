@@ -330,13 +330,15 @@ export class AdobeAIParser {
    * Convert parsed AI data to Fabric.js objects
    */
   static convertToFabricObjects(parsedData: ParsedAIFile): any[] {
+    console.log('🚀 convertToFabricObjects called with:', parsedData);
     const fabricObjects: any[] = [];
 
     console.log('🔄 Converting', parsedData.objects.length, 'AI objects to Fabric.js format...');
     
-    for (const aiObject of parsedData.objects) {
+    for (let i = 0; i < parsedData.objects.length; i++) {
+      const aiObject = parsedData.objects[i];
       try {
-        console.log('🔍 Processing AI object:', {
+        console.log(`🔍 Processing AI object ${i + 1}/${parsedData.objects.length}:`, {
           id: aiObject.id,
           type: aiObject.type,
           coordinates: aiObject.coordinates,
@@ -345,6 +347,8 @@ export class AdobeAIParser {
         });
         
         const fabricObject = this.convertAIObjectToFabric(aiObject, parsedData.metadata);
+        console.log(`🎯 convertAIObjectToFabric returned for ${aiObject.id}:`, fabricObject);
+        
         if (fabricObject) {
           console.log('✅ Created Fabric object:', {
             type: fabricObject.type,
@@ -356,6 +360,7 @@ export class AdobeAIParser {
             stroke: fabricObject.stroke
           });
           fabricObjects.push(fabricObject);
+          console.log(`📊 Current fabricObjects count: ${fabricObjects.length}`);
         } else {
           console.warn('❌ Failed to create Fabric object for:', aiObject.id);
         }
@@ -364,8 +369,8 @@ export class AdobeAIParser {
       }
     }
 
-    console.log('✅ Successfully converted', fabricObjects.length, 'objects to Fabric.js format');
-    console.log('📋 Final fabric objects:', fabricObjects);
+    console.log('✅ FINAL RESULT: Successfully converted', fabricObjects.length, 'objects to Fabric.js format');
+    console.log('📋 FINAL fabric objects array:', fabricObjects);
     return fabricObjects;
   }
 

@@ -138,16 +138,20 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
       const parsed = await AdobeAIParser.parseAIFile(selectedFile);
       console.log('✅ AI file parsed successfully:', parsed);
       
+      const fabricObjects = AdobeAIParser.convertToFabricObjects(parsed);
+      console.log('🔍 CONVERTED FABRIC OBJECTS:', fabricObjects);
+      
       const canvasData = {
         version: '1.0',
         width: parsed.metadata.pageSize.width,
         height: parsed.metadata.pageSize.height,
-        objects: AdobeAIParser.convertToFabricObjects(parsed),
+        objects: fabricObjects,
         background: '#ffffff',
         metadata: parsed.metadata
       };
       
       console.log('🎨 Canvas data ready:', canvasData);
+      console.log('🚀 CALLING onImportSuccess with canvasData...');
       onImportSuccess(canvasData);
       onClose?.();
 
