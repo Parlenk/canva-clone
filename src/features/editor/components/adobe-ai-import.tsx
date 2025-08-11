@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle, Settings, Eye } from 'lucide-react';
+import { useCallback, useState, useRef } from 'react';
+import { Upload, FileText, AlertCircle, CheckCircle, Settings, Eye, FolderOpen } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
 import { Button } from '@/components/ui/button';
@@ -86,12 +86,33 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
   const [fileValidation, setFileValidation] = useState<{ isValid: boolean; error?: string; warnings?: string[] } | null>(null);
   const [filePreview, setFilePreview] = useState<{ metadata: any; thumbnail?: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    console.log('🎯 onDrop called with files:', acceptedFiles);
     const file = acceptedFiles[0];
-    if (!file) return;
+    if (!file) {
+      console.log('❌ No file provided to onDrop');
+      return;
+    }
 
-    console.log('📁 Adobe AI file selected:', file.name);
+    console.log('📁 Adobe AI file selected:', {
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      lastModified: new Date(file.lastModified).toISOString()
+    });
+
+    // Check if this is actually a screenshot instead of an AI file
+    if (file.name.toLowerCase().includes('screenshot') || file.type.startsWith('image/')) {
+      console.error('❌ Detected screenshot file instead of AI file!');
+      setFileValidation({
+        isValid: false,
+        error: 'This appears to be a screenshot file, not an Adobe AI file. Please select a .ai file instead.'
+      });
+      return;
+    }
+
     setSelectedFile(file);
 
     try {
@@ -113,14 +134,34 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
     }
   }, []);
 
+  const handleFileInputChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Process the file using the same onDrop logic
+    await onDrop([file]);
+  }, [onDrop]);
+
+  const openFileDialog = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop,
     accept: {
       'application/postscript': ['.ai'],
       'application/illustrator': ['.ai'],
+      'application/pdf': ['.ai'], // AI files are often PDF-based
+      'application/octet-stream': ['.ai'], // Fallback for AI files
     },
     maxFiles: 1,
     maxSize: 50 * 1024 * 1024, // 50MB
+    onDropRejected: (fileRejections) => {
+      console.log('❌ Files rejected:', fileRejections);
+      fileRejections.forEach(rejection => {
+        console.log('❌ Rejected file:', rejection.file.name, 'Errors:', rejection.errors);
+      });
+    }
   });
 
   const handleImport = async () => {
@@ -216,14 +257,30 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
           {!selectedFile ? (
             <>
               <Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <p className="text-lg font-medium">
                   {isDragActive ? 'Drop your AI file here' : 'Choose or drag your AI file'}
                 </p>
                 <p className="text-sm text-gray-500">
                   Supports Adobe Illustrator (.ai) files up to 50MB
                 </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={openFileDialog}
+                  className="mx-auto flex items-center space-x-2"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  <span>Browse Files</span>
+                </Button>
               </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".ai"
+                onChange={handleFileInputChange}
+                className="hidden"
+              />
             </>
           ) : (
             <div className="space-y-4">

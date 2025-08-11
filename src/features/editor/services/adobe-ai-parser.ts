@@ -111,49 +111,7 @@ export class AdobeAIParser {
       // Check if it's PDF-based AI
       if (fileContent.includes('%PDF-')) {
         console.log('📄 Detected PDF-based AI file');
-        console.log('🔥 FORCE TEST MODE: Creating simple visible objects directly');
-        
-        // BYPASS PARSER - CREATE SIMPLE TEST OBJECTS DIRECTLY
-        return {
-          metadata: {
-            version: 'FORCE-TEST-v1',
-            creator: 'Adobe Illustrator',
-            title: 'TEST MODE - DIRECT OBJECTS',
-            boundingBox: { left: 0, bottom: 0, right: 800, top: 600 },
-            pageSize: { width: 800, height: 600 },
-          },
-          objects: [
-            {
-              id: 'test_rect_1',
-              type: 'path',
-              coordinates: [[100, 100], [300, 100], [300, 200], [100, 200]],
-              fill: '#ff0000',
-              stroke: '#000000',
-              strokeWidth: 2
-            },
-            {
-              id: 'test_rect_2', 
-              type: 'path',
-              coordinates: [[400, 150], [600, 150], [600, 250], [400, 250]],
-              fill: '#00ff00',
-              stroke: '#000000',
-              strokeWidth: 2
-            },
-            {
-              id: 'test_text',
-              type: 'text',
-              coordinates: [[400, 350]],
-              text: 'ADOBE AI IMPORT TEST - SUCCESS!',
-              fontSize: 20,
-              fontFamily: 'Arial',
-              fill: '#0000ff'
-            }
-          ],
-          artboards: [{
-            name: 'Test Artboard',
-            bounds: { x: 0, y: 0, width: 800, height: 600 }
-          }]
-        };
+        return this.parsePDFBasedAI(fileContent);
       }
 
       // Parse metadata
@@ -252,78 +210,56 @@ export class AdobeAIParser {
    * Parse PDF-based AI files (common in newer Illustrator versions)
    */
   private static parsePDFBasedAI(content: string): ParsedAIFile {
-    console.log('🔍 Attempting to parse PDF-based AI structure...');
-    console.log('🚀 DEBUG MARKER: UPDATED PARSER v2.0 - SHOULD CREATE 4 OBJECTS');
+    console.log('🔍 Starting real PDF-based AI parsing...');
     
-    // Force reasonable canvas dimensions instead of using PDF dimensions
-    // PDF dimensions (like 612x792) are too large for web canvas
-    const width = 800;  // Fixed reasonable width
-    const height = 600; // Fixed reasonable height
+    try {
+      // Extract PDF metadata
+      const metadata = this.extractPDFMetadata(content);
+      console.log('📋 PDF Metadata extracted:', metadata);
 
-    console.log(`📏 Using fixed canvas dimensions: ${width}x${height} (ignoring PDF MediaBox)`);
+      // Parse PDF streams containing vector data
+      const objects = this.parsePDFStreams(content);
+      console.log(`🎨 Found ${objects.length} objects in PDF streams`);
 
-    // Create more sophisticated placeholder objects
-    const objects: AIPathData[] = [];
-    
-    console.log('🔧 Creating multiple placeholder objects for PDF-based AI file...');
+      // Extract artboards from PDF pages
+      const artboards = this.extractPDFArtboards(content);
+      console.log(`🖼️ Found ${artboards.length} artboards`);
 
-    // Add a background rectangle (smaller and more visible)
-    objects.push({
-      id: 'pdf_background',
-      type: 'path',
-      coordinates: [[50, 50], [width - 50, 50], [width - 50, height - 50], [50, height - 50]],
-      fill: '#f8f9fa',
-      stroke: '#dee2e6',
-      strokeWidth: 2
-    });
+      // If no objects found, create informative placeholder
+      if (objects.length === 0) {
+        console.log('⚠️ No parseable objects found, creating informative placeholder');
+        objects.push(...this.createInformativePlaceholders(metadata.pageSize.width, metadata.pageSize.height));
+      }
 
-    // Add informative text
-    objects.push({
-      id: 'pdf_info_text',
-      type: 'text',
-      coordinates: [[width / 2, height / 2 - 40]],
-      text: 'Adobe AI File Imported',
-      fontSize: 18,
-      fontFamily: 'Arial',
-      fill: '#495057'
-    });
+      return {
+        metadata,
+        objects,
+        artboards
+      };
 
-    objects.push({
-      id: 'pdf_details_text',
-      type: 'text',
-      coordinates: [[width / 2, height / 2]],
-      text: 'PDF-based AI format detected\nSome visual elements may need\nmanual recreation',
-      fontSize: 14,
-      fontFamily: 'Arial',
-      fill: '#6c757d'
-    });
-
-    // Add a visual indicator shape
-    objects.push({
-      id: 'pdf_indicator',
-      type: 'path',
-      coordinates: [[width / 2 - 30, height / 2 + 40], [width / 2 + 30, height / 2 + 40], [width / 2 + 30, height / 2 + 70], [width / 2 - 30, height / 2 + 70]],
-      fill: '#007bff',
-      stroke: '#0056b3',
-      strokeWidth: 1
-    });
-
-    console.log(`✅ Created ${objects.length} placeholder objects:`, objects.map(o => ({ id: o.id, type: o.type, coords: o.coordinates })));
-
-    return {
-      metadata: {
-        version: 'PDF-based AI',
-        creator: 'Adobe Illustrator',
-        title: 'Imported Adobe AI File',
-        boundingBox: { left: 0, bottom: 0, right: width, top: height },
-        pageSize: { width, height },
-      },
-      objects,
-      artboards: [{
-        name: 'Main Artboard',
-        bounds: { x: 0, y: 0, width, height }
-      }]
-    };
+    } catch (error) {
+      console.error('❌ PDF parsing failed:', error);
+      
+      // Create fallback with error information
+      const fallbackWidth = 800;
+      const fallbackHeight = 600;
+      
+      return {
+        metadata: {
+          version: 'PDF-based AI (Parse Error)',
+          creator: 'Adobe Illustrator',
+          title: 'Import Error - Partial Recovery',
+          boundingBox: { left: 0, bottom: 0, right: fallbackWidth, top: fallbackHeight },
+          pageSize: { width: fallbackWidth, height: fallbackHeight },
+          parsingError: error instanceof Error ? error.message : 'Unknown PDF parsing error'
+        },
+        objects: this.createErrorPlaceholders(fallbackWidth, fallbackHeight, error),
+        artboards: [{
+          name: 'Recovery Artboard',
+          bounds: { x: 0, y: 0, width: fallbackWidth, height: fallbackHeight }
+        }]
+      };
+    }
   }
 
   /**
@@ -682,6 +618,661 @@ export class AdobeAIParser {
     }
     
     return path;
+  }
+
+  /**
+   * Extract metadata from PDF-based AI file
+   */
+  private static extractPDFMetadata(content: string): AIFileMetadata {
+    console.log('📊 Extracting PDF metadata...');
+
+    let version = 'Unknown';
+    let creator = 'Adobe Illustrator';
+    let title: string | undefined;
+    let boundingBox = { left: 0, bottom: 0, right: 612, top: 792 }; // Default US Letter
+    
+    try {
+      // Extract PDF version
+      const pdfVersionMatch = content.match(/%PDF-(\d+\.\d+)/);
+      if (pdfVersionMatch) {
+        version = `PDF-${pdfVersionMatch[1]}`;
+      }
+
+      // Extract Creator information
+      const creatorMatch = content.match(/\/Creator\s*\(([^)]+)\)/);
+      if (creatorMatch) {
+        creator = creatorMatch[1];
+      }
+
+      // Extract Title
+      const titleMatch = content.match(/\/Title\s*\(([^)]+)\)/);
+      if (titleMatch) {
+        title = titleMatch[1];
+      }
+
+      // Extract MediaBox (page dimensions)
+      const mediaBoxMatch = content.match(/\/MediaBox\s*\[\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\]/);
+      if (mediaBoxMatch) {
+        boundingBox = {
+          left: parseFloat(mediaBoxMatch[1]),
+          bottom: parseFloat(mediaBoxMatch[2]),
+          right: parseFloat(mediaBoxMatch[3]),
+          top: parseFloat(mediaBoxMatch[4])
+        };
+      }
+
+      // Force reasonable canvas size (PDF points are too large for web)
+      const maxWidth = 1200;
+      const maxHeight = 900;
+      
+      let pageWidth = boundingBox.right - boundingBox.left;
+      let pageHeight = boundingBox.top - boundingBox.bottom;
+      
+      if (pageWidth > maxWidth || pageHeight > maxHeight) {
+        const scale = Math.min(maxWidth / pageWidth, maxHeight / pageHeight);
+        pageWidth *= scale;
+        pageHeight *= scale;
+        console.log(`📏 Scaled canvas from ${boundingBox.right - boundingBox.left}x${boundingBox.top - boundingBox.bottom} to ${pageWidth}x${pageHeight}`);
+      }
+
+      return {
+        version,
+        creator,
+        title,
+        boundingBox,
+        pageSize: {
+          width: Math.round(pageWidth),
+          height: Math.round(pageHeight)
+        },
+        creationDate: new Date(),
+        modificationDate: new Date()
+      };
+
+    } catch (error) {
+      console.warn('⚠️ Failed to extract some PDF metadata:', error);
+      return {
+        version: 'PDF-based AI',
+        creator: 'Adobe Illustrator',
+        boundingBox,
+        pageSize: { width: 800, height: 600 },
+        creationDate: new Date(),
+        modificationDate: new Date()
+      };
+    }
+  }
+
+  /**
+   * Parse PDF streams to extract vector objects
+   */
+  private static parsePDFStreams(content: string): AIPathData[] {
+    console.log('🔄 Parsing PDF streams for vector data...');
+    const objects: AIPathData[] = [];
+    let objectId = 0;
+
+    try {
+      // Find all stream objects
+      const streamPattern = /stream\s*([\s\S]*?)\s*endstream/g;
+      let streamMatch;
+      
+      while ((streamMatch = streamPattern.exec(content)) !== null) {
+        const streamContent = streamMatch[1];
+        
+        // Parse different types of drawing commands
+        objects.push(...this.parseStreamDrawingCommands(streamContent, objectId));
+        objectId += objects.length;
+        
+        // Parse text objects in streams
+        objects.push(...this.parseStreamTextCommands(streamContent, objectId));
+        objectId += objects.length;
+        
+        // Parse image references
+        objects.push(...this.parseStreamImages(streamContent, objectId));
+        objectId += objects.length;
+        
+        // Parse gradients and complex effects
+        objects.push(...this.parseComplexEffects(streamContent, objectId));
+        objectId += objects.length;
+      }
+
+      // Parse XObject references (often contain Illustrator vector data)
+      const xObjectPattern = /\/XObject\s*<<\s*([\s\S]*?)\s*>>/g;
+      let xObjectMatch;
+      
+      while ((xObjectMatch = xObjectPattern.exec(content)) !== null) {
+        objects.push(...this.parseXObjects(xObjectMatch[1], objectId));
+        objectId += objects.length;
+      }
+
+      console.log(`✅ Parsed ${objects.length} objects from PDF streams`);
+      return objects;
+
+    } catch (error) {
+      console.warn('⚠️ Error parsing PDF streams:', error);
+      return objects; // Return what we have so far
+    }
+  }
+
+  /**
+   * Parse drawing commands from PDF stream
+   */
+  private static parseStreamDrawingCommands(streamContent: string, startId: number): AIPathData[] {
+    const objects: AIPathData[] = [];
+    let objectId = startId;
+
+    try {
+      // Parse path construction commands
+      const pathCommands = ['m', 'l', 'c', 's', 'v', 'y', 'h']; // moveto, lineto, curveto, etc.
+      const pathPattern = new RegExp(`(-?\\d+(?:\\.\\d+)?)\\s+(-?\\d+(?:\\.\\d+)?)\\s+(${pathCommands.join('|')})`, 'g');
+      
+      let currentPath: number[][] = [];
+      let currentFill: string | undefined;
+      let currentStroke: string | undefined;
+      let currentStrokeWidth: number = 1;
+      
+      // Parse color commands
+      const fillColorPattern = /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+rg/g;
+      const strokeColorPattern = /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+RG/g;
+      const strokeWidthPattern = /(-?\d+(?:\.\d+)?)\s+w/g;
+
+      // Extract colors
+      let colorMatch;
+      while ((colorMatch = fillColorPattern.exec(streamContent)) !== null) {
+        const r = Math.round(parseFloat(colorMatch[1]) * 255);
+        const g = Math.round(parseFloat(colorMatch[2]) * 255);
+        const b = Math.round(parseFloat(colorMatch[3]) * 255);
+        currentFill = `rgb(${r}, ${g}, ${b})`;
+      }
+
+      while ((colorMatch = strokeColorPattern.exec(streamContent)) !== null) {
+        const r = Math.round(parseFloat(colorMatch[1]) * 255);
+        const g = Math.round(parseFloat(colorMatch[2]) * 255);
+        const b = Math.round(parseFloat(colorMatch[3]) * 255);
+        currentStroke = `rgb(${r}, ${g}, ${b})`;
+      }
+
+      // Extract stroke width
+      let widthMatch;
+      while ((widthMatch = strokeWidthPattern.exec(streamContent)) !== null) {
+        currentStrokeWidth = parseFloat(widthMatch[1]);
+      }
+
+      // Parse path commands
+      let pathMatch;
+      while ((pathMatch = pathPattern.exec(streamContent)) !== null) {
+        const x = parseFloat(pathMatch[1]);
+        const y = parseFloat(pathMatch[2]);
+        const command = pathMatch[3];
+        
+        switch (command) {
+          case 'm': // moveto - start new path
+            if (currentPath.length > 0) {
+              // Save previous path
+              objects.push({
+                id: `pdf_path_${objectId++}`,
+                type: 'path',
+                coordinates: [...currentPath],
+                fill: currentFill,
+                stroke: currentStroke,
+                strokeWidth: currentStrokeWidth
+              });
+            }
+            currentPath = [[x, y]];
+            break;
+          case 'l': // lineto
+            currentPath.push([x, y]);
+            break;
+          case 'c': // curveto (simplified to line for now)
+            currentPath.push([x, y]);
+            break;
+        }
+      }
+      
+      // Add final path if exists
+      if (currentPath.length > 0) {
+        objects.push({
+          id: `pdf_path_${objectId++}`,
+          type: 'path',
+          coordinates: currentPath,
+          fill: currentFill || '#cccccc',
+          stroke: currentStroke || '#000000',
+          strokeWidth: currentStrokeWidth
+        });
+      }
+
+    } catch (error) {
+      console.warn('⚠️ Error parsing drawing commands:', error);
+    }
+
+    return objects;
+  }
+
+  /**
+   * Parse text commands from PDF stream
+   */
+  private static parseStreamTextCommands(streamContent: string, startId: number): AIPathData[] {
+    const objects: AIPathData[] = [];
+    let objectId = startId;
+
+    try {
+      // Parse text showing commands
+      const textPattern = /\((.*?)\)\s*Tj/g;
+      const textPositionPattern = /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+Td/g;
+      const fontSizePattern = /\/F\d+\s+(-?\d+(?:\.\d+)?)\s+Tf/g;
+      
+      let currentX = 0;
+      let currentY = 0;
+      let currentFontSize = 12;
+      
+      // Extract font size
+      let fontMatch;
+      while ((fontMatch = fontSizePattern.exec(streamContent)) !== null) {
+        currentFontSize = parseFloat(fontMatch[1]);
+      }
+
+      // Extract text positions
+      let positionMatch;
+      while ((positionMatch = textPositionPattern.exec(streamContent)) !== null) {
+        currentX = parseFloat(positionMatch[1]);
+        currentY = parseFloat(positionMatch[2]);
+      }
+
+      // Extract text content
+      let textMatch;
+      while ((textMatch = textPattern.exec(streamContent)) !== null) {
+        const textContent = textMatch[1];
+        
+        if (textContent && textContent.length > 0 && textContent !== ' ') {
+          objects.push({
+            id: `pdf_text_${objectId++}`,
+            type: 'text',
+            coordinates: [[currentX, currentY]],
+            text: this.decodePDFText(textContent),
+            fontSize: currentFontSize,
+            fontFamily: 'Arial', // Default, would need more parsing for actual font
+            fill: '#000000' // Default text color
+          });
+          
+          // Advance position for next text (rough estimation)
+          currentX += textContent.length * currentFontSize * 0.6;
+        }
+      }
+
+    } catch (error) {
+      console.warn('⚠️ Error parsing text commands:', error);
+    }
+
+    return objects;
+  }
+
+  /**
+   * Parse image references from PDF stream
+   */
+  private static parseStreamImages(streamContent: string, startId: number): AIPathData[] {
+    const objects: AIPathData[] = [];
+    let objectId = startId;
+
+    try {
+      // Look for image operators (Do command with XObject reference)
+      const imagePattern = /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+cm\s+\/(\w+)\s+Do/g;
+      
+      let imageMatch;
+      while ((imageMatch = imagePattern.exec(streamContent)) !== null) {
+        const scaleX = parseFloat(imageMatch[1]);
+        const skewY = parseFloat(imageMatch[2]);
+        const skewX = parseFloat(imageMatch[3]);
+        const scaleY = parseFloat(imageMatch[4]);
+        const imageName = imageMatch[5];
+        
+        // Create placeholder for embedded image
+        objects.push({
+          id: `pdf_image_${objectId++}`,
+          type: 'image',
+          coordinates: [[0, 0]], // Position would be in transformation matrix
+          text: `[Embedded Image: ${imageName}]`,
+          // Store transform info for potential use
+          transform: [scaleX, skewY, skewX, scaleY, 0, 0]
+        });
+      }
+
+    } catch (error) {
+      console.warn('⚠️ Error parsing image references:', error);
+    }
+
+    return objects;
+  }
+
+  /**
+   * Parse complex effects like gradients, shadows, and filters
+   */
+  private static parseComplexEffects(streamContent: string, startId: number): AIPathData[] {
+    const objects: AIPathData[] = [];
+    let objectId = startId;
+
+    try {
+      // Parse gradient patterns
+      const gradientPatterns = [
+        /\/Pattern\s+cs\s+\/(\w+)\s+scn/g, // Pattern color space
+        /\/DeviceN\s*\[[\s\S]*?\]\s*\/(\w+)/g, // DeviceN color space (gradients)
+        /\/Separation\s*\/(\w+)/g, // Separation color space
+        /sh\s*$/gm, // Shading operator
+      ];
+
+      for (const pattern of gradientPatterns) {
+        let match;
+        while ((match = pattern.exec(streamContent)) !== null) {
+          // Create gradient placeholder
+          objects.push({
+            id: `gradient_placeholder_${objectId++}`,
+            type: 'path',
+            coordinates: [[20, 20], [180, 20], [180, 80], [20, 80]], // Small rectangle
+            fill: `linear-gradient(45deg, #ff6b6b, #4ecdc4)`, // Placeholder gradient
+            stroke: '#888888',
+            strokeWidth: 1,
+            opacity: 0.8
+          });
+
+          // Add explanatory text
+          objects.push({
+            id: `gradient_text_${objectId++}`,
+            type: 'text',
+            coordinates: [[100, 50]],
+            text: '[Gradient Effect]',
+            fontSize: 10,
+            fontFamily: 'Arial',
+            fill: '#333333'
+          });
+        }
+      }
+
+      // Parse shadow/blur effects
+      const shadowPatterns = [
+        /BDC[\s\S]*?EMC/g, // Marked content (often effects)
+        /\/GS\d+\s+gs/g, // Graphics state (can contain effects)
+        /\/ExtGState\s+<<[\s\S]*?>>/g, // Extended graphics state
+      ];
+
+      for (const pattern of shadowPatterns) {
+        let match;
+        while ((match = pattern.exec(streamContent)) !== null) {
+          objects.push({
+            id: `effect_placeholder_${objectId++}`,
+            type: 'path',
+            coordinates: [[200, 20], [360, 20], [360, 80], [200, 80]],
+            fill: 'rgba(0, 0, 0, 0.1)', // Subtle shadow effect
+            stroke: '#cccccc',
+            strokeWidth: 1,
+            opacity: 0.7
+          });
+
+          objects.push({
+            id: `effect_text_${objectId++}`,
+            type: 'text',
+            coordinates: [[280, 50]],
+            text: '[Visual Effect]',
+            fontSize: 10,
+            fontFamily: 'Arial',
+            fill: '#666666'
+          });
+        }
+      }
+
+      // Parse transparency/opacity groups
+      const transparencyPattern = /\/Type\s*\/Group[\s\S]*?\/S\s*\/Transparency/g;
+      let transparencyMatch;
+      while ((transparencyMatch = transparencyPattern.exec(streamContent)) !== null) {
+        objects.push({
+          id: `transparency_placeholder_${objectId++}`,
+          type: 'path',
+          coordinates: [[380, 20], [540, 20], [540, 80], [380, 80]],
+          fill: 'rgba(255, 255, 255, 0.3)',
+          stroke: '#999999',
+          strokeWidth: 1,
+          opacity: 0.5
+        });
+
+        objects.push({
+          id: `transparency_text_${objectId++}`,
+          type: 'text',
+          coordinates: [[460, 50]],
+          text: '[Transparency]',
+          fontSize: 10,
+          fontFamily: 'Arial',
+          fill: '#555555'
+        });
+      }
+
+      // Parse clipping paths
+      const clippingPattern = /W\s+n\s*$/gm; // Clipping path operator
+      let clippingMatch;
+      while ((clippingMatch = clippingPattern.exec(streamContent)) !== null) {
+        objects.push({
+          id: `clipping_placeholder_${objectId++}`,
+          type: 'path',
+          coordinates: [[560, 20], [720, 20], [720, 80], [560, 80]],
+          fill: 'none',
+          stroke: '#ff9500',
+          strokeWidth: 2,
+          opacity: 0.8
+        });
+
+        objects.push({
+          id: `clipping_text_${objectId++}`,
+          type: 'text',
+          coordinates: [[640, 50]],
+          text: '[Clipping Mask]',
+          fontSize: 10,
+          fontFamily: 'Arial',
+          fill: '#ff9500'
+        });
+      }
+
+      // Parse blend modes
+      const blendModePattern = /\/BM\s*\/(\w+)/g;
+      let blendMatch;
+      while ((blendMatch = blendModePattern.exec(streamContent)) !== null) {
+        const blendMode = blendMatch[1];
+        
+        objects.push({
+          id: `blend_placeholder_${objectId++}`,
+          type: 'path',
+          coordinates: [[20, 100], [180, 100], [180, 160], [20, 160]],
+          fill: '#ff6b9d',
+          stroke: '#c44569',
+          strokeWidth: 1,
+          opacity: 0.6
+        });
+
+        objects.push({
+          id: `blend_text_${objectId++}`,
+          type: 'text',
+          coordinates: [[100, 130]],
+          text: `[Blend: ${blendMode}]`,
+          fontSize: 10,
+          fontFamily: 'Arial',
+          fill: '#333333'
+        });
+      }
+
+      console.log(`🎨 Found ${objects.length} complex effects/gradients`);
+
+    } catch (error) {
+      console.warn('⚠️ Error parsing complex effects:', error);
+    }
+
+    return objects;
+  }
+
+  /**
+   * Parse XObject definitions (often contain vector graphics)
+   */
+  private static parseXObjects(xObjectContent: string, startId: number): AIPathData[] {
+    const objects: AIPathData[] = [];
+    let objectId = startId;
+
+    try {
+      // XObjects in AI files often contain the actual vector data
+      // This is a simplified parser - real implementation would be more complex
+      
+      const vectorDataPattern = /\/Subtype\s*\/Form[\s\S]*?stream([\s\S]*?)endstream/g;
+      let vectorMatch;
+      
+      while ((vectorMatch = vectorDataPattern.exec(xObjectContent)) !== null) {
+        const vectorStream = vectorMatch[1];
+        
+        // Parse the vector stream similar to regular streams
+        objects.push(...this.parseStreamDrawingCommands(vectorStream, objectId));
+        objectId += objects.length;
+      }
+
+    } catch (error) {
+      console.warn('⚠️ Error parsing XObjects:', error);
+    }
+
+    return objects;
+  }
+
+  /**
+   * Extract artboards from PDF pages
+   */
+  private static extractPDFArtboards(content: string): Array<{ name: string; bounds: { x: number; y: number; width: number; height: number } }> {
+    const artboards: Array<{ name: string; bounds: { x: number; y: number; width: number; height: number } }> = [];
+    
+    try {
+      // Look for page objects and their MediaBox
+      const pagePattern = /\/Type\s*\/Page[\s\S]*?\/MediaBox\s*\[\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\]/g;
+      
+      let pageMatch;
+      let pageIndex = 0;
+      
+      while ((pageMatch = pagePattern.exec(content)) !== null) {
+        const left = parseFloat(pageMatch[1]);
+        const bottom = parseFloat(pageMatch[2]);
+        const right = parseFloat(pageMatch[3]);
+        const top = parseFloat(pageMatch[4]);
+        
+        artboards.push({
+          name: `Artboard ${pageIndex + 1}`,
+          bounds: {
+            x: left,
+            y: bottom,
+            width: right - left,
+            height: top - bottom
+          }
+        });
+        
+        pageIndex++;
+      }
+      
+    } catch (error) {
+      console.warn('⚠️ Error extracting artboards:', error);
+    }
+
+    // Default artboard if none found
+    if (artboards.length === 0) {
+      artboards.push({
+        name: 'Main Artboard',
+        bounds: { x: 0, y: 0, width: 800, height: 600 }
+      });
+    }
+
+    return artboards;
+  }
+
+  /**
+   * Decode PDF text encoding
+   */
+  private static decodePDFText(encodedText: string): string {
+    try {
+      // Handle basic PDF text encoding (this is simplified)
+      return encodedText
+        .replace(/\\n/g, '\n')
+        .replace(/\\r/g, '\r')
+        .replace(/\\t/g, '\t')
+        .replace(/\\\\/g, '\\')
+        .replace(/\\\(/g, '(')
+        .replace(/\\\)/g, ')');
+    } catch (error) {
+      return encodedText;
+    }
+  }
+
+  /**
+   * Create informative placeholders when no objects are found
+   */
+  private static createInformativePlaceholders(width: number, height: number): AIPathData[] {
+    return [
+      {
+        id: 'info_background',
+        type: 'path',
+        coordinates: [[50, 50], [width - 50, 50], [width - 50, height - 50], [50, height - 50]],
+        fill: '#f8f9fa',
+        stroke: '#dee2e6',
+        strokeWidth: 2
+      },
+      {
+        id: 'info_title',
+        type: 'text',
+        coordinates: [[width / 2, height / 2 - 60]],
+        text: 'Adobe AI File Successfully Imported',
+        fontSize: 18,
+        fontFamily: 'Arial',
+        fill: '#495057'
+      },
+      {
+        id: 'info_content',
+        type: 'text',
+        coordinates: [[width / 2, height / 2 - 20]],
+        text: 'The file structure was processed, but no visible\nvector objects were found in the PDF streams.\n\nThis can happen with:\n• Complex embedded graphics\n• Compressed or encoded content\n• Newer AI format features',
+        fontSize: 14,
+        fontFamily: 'Arial',
+        fill: '#6c757d'
+      },
+      {
+        id: 'info_action',
+        type: 'text',
+        coordinates: [[width / 2, height / 2 + 60]],
+        text: 'You can now add your own elements to this canvas!',
+        fontSize: 16,
+        fontFamily: 'Arial',
+        fill: '#28a745'
+      }
+    ];
+  }
+
+  /**
+   * Create error placeholders when parsing fails
+   */
+  private static createErrorPlaceholders(width: number, height: number, error: any): AIPathData[] {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    return [
+      {
+        id: 'error_background',
+        type: 'path',
+        coordinates: [[50, 50], [width - 50, 50], [width - 50, height - 50], [50, height - 50]],
+        fill: '#fff3cd',
+        stroke: '#ffeaa7',
+        strokeWidth: 2
+      },
+      {
+        id: 'error_title',
+        type: 'text',
+        coordinates: [[width / 2, height / 2 - 40]],
+        text: 'AI File Import - Partial Success',
+        fontSize: 18,
+        fontFamily: 'Arial',
+        fill: '#856404'
+      },
+      {
+        id: 'error_message',
+        type: 'text',
+        coordinates: [[width / 2, height / 2]],
+        text: `The file was recognized as an Adobe AI file,\nbut some parsing errors occurred.\n\nError: ${errorMessage.substring(0, 100)}${errorMessage.length > 100 ? '...' : ''}\n\nYou can still use this canvas to create your design!`,
+        fontSize: 14,
+        fontFamily: 'Arial',
+        fill: '#856404'
+      }
+    ];
   }
 }
 
