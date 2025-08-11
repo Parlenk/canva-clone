@@ -921,7 +921,7 @@ const buildEditor = ({
                 canvas.add(fabricObject);
                 loadedObjects++;
                 console.log('🎯 [STEP 13] Current canvas object count:', canvas.getObjects().length);
-                console.log('🎯 [STEP 14] Canvas objects:', canvas.getObjects().map(o => ({ type: o.type, id: o.id || 'no-id' })));
+                console.log('🎯 [STEP 14] Canvas objects:', canvas.getObjects().map(o => ({ type: o.type, id: (o as any).id || 'no-id' })));
               } else {
                 console.warn('❌ [STEP 11] Failed to create fabric object from:', objectData);
               }
@@ -931,7 +931,7 @@ const buildEditor = ({
           }
           
           console.log(`🎯 [STEP 13] Successfully loaded ${loadedObjects}/${canvasData.objects.length} objects`);
-          console.log('🎯 [STEP 14] Final canvas objects:', canvas.getObjects().map(o => ({ type: o.type, id: o.id || 'no-id' })));
+          console.log('🎯 [STEP 14] Final canvas objects:', canvas.getObjects().map(o => ({ type: o.type, id: (o as any).id || 'no-id' })));
           
           // Ensure workspace is at the back
           const workspace = getWorkspace();
