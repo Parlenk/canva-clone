@@ -611,6 +611,12 @@ export class AdobeAIParser {
    */
   static convertToFabricObjects(parsedData: ParsedAIFile): any[] {
     console.log('🚀 convertToFabricObjects called with:', parsedData);
+    console.log('📏 AI File Metadata:', {
+      dimensions: `${parsedData.metadata.pageSize.width}x${parsedData.metadata.pageSize.height}`,
+      boundingBox: parsedData.metadata.boundingBox,
+      version: parsedData.metadata.version,
+      creator: parsedData.metadata.creator
+    });
     const fabricObjects: any[] = [];
 
     console.log('🔄 Converting', parsedData.objects.length, 'AI objects to Fabric.js format...');
@@ -866,6 +872,12 @@ export class AdobeAIParser {
     // Transform all coordinates to canvas space first
     const transformedCoords = aiObject.coordinates.map(coord => this.transformCoordinates(coord, metadata));
     
+    // DEBUG: Log coordinate transformation details
+    console.log('🔍 DETAILED COORDINATE DEBUG:');
+    console.log(`  Original AI coords: ${JSON.stringify(aiObject.coordinates.slice(0, 2))}`);
+    console.log(`  Transformed coords: ${JSON.stringify(transformedCoords.slice(0, 2))}`);
+    console.log(`  AI file size: ${metadata.pageSize.width}x${metadata.pageSize.height}`);
+    
     // Convert transformed coordinates to SVG path
     const pathString = this.coordinatesToSVGPath(transformedCoords);
     
@@ -876,18 +888,26 @@ export class AdobeAIParser {
       const width = Math.max(...transformedCoords.map(c => c[0])) - left;
       const height = Math.max(...transformedCoords.map(c => c[1])) - top;
       
-      console.log(`📐 Creating rectangle: AI coords -> canvas coords, size ${width}x${height} at [${left}, ${top}]`);
+      // FORCE MINIMUM VISIBLE SIZE for rectangles
+      const minSize = 50;
+      const finalWidth = Math.max(width, minSize);
+      const finalHeight = Math.max(height, minSize);
+      
+      console.log(`📐 Creating rectangle: AI coords -> canvas coords`);
+      console.log(`  Calculated size: ${width}x${height} -> FINAL: ${finalWidth}x${finalHeight}`);
+      console.log(`  Position: [${left}, ${top}]`);
+      console.log(`  VISIBILITY CHECK: x=${left >= 0 && left <= 1200}, y=${top >= 0 && top <= 800}`);
       
       return {
         type: 'rect',
         left: left,
         top: top,
-        width: width,
-        height: height,
-        fill: aiObject.fill || '#f0f0f0',
-        stroke: aiObject.stroke || '#cccccc',
-        strokeWidth: aiObject.strokeWidth || 2,
-        opacity: aiObject.opacity || 1,
+        width: finalWidth,
+        height: finalHeight,
+        fill: aiObject.fill || '#FF5722', // BRIGHT ORANGE for visibility
+        stroke: aiObject.stroke || '#E91E63', // BRIGHT PINK stroke
+        strokeWidth: Math.max(aiObject.strokeWidth || 3, 3), // Thick stroke
+        opacity: Math.max(aiObject.opacity || 1, 0.8),
         scaleX: 1,
         scaleY: 1,
         rx: 5, // Slightly rounded corners
@@ -895,15 +915,31 @@ export class AdobeAIParser {
       };
     }
     
-    // For proper paths, ensure visibility
-    const fill = aiObject.fill || (aiObject.stroke ? 'transparent' : '#e0e0e0');
-    const stroke = aiObject.stroke || '#666666';
+    // For proper paths, ensure maximum visibility with bright colors
+    const fill = aiObject.fill || '#FF9800'; // BRIGHT ORANGE for visibility
+    const stroke = aiObject.stroke || '#F44336'; // BRIGHT RED stroke for visibility
+    const strokeWidth = Math.max(aiObject.strokeWidth || 4, 4); // THICK stroke for visibility
     
     // Use first transformed coordinate for positioning
     const firstCoord = transformedCoords[0] || [100, 100];
     
+    // Calculate path bounds for debugging
+    const allX = transformedCoords.map(c => c[0]);
+    const allY = transformedCoords.map(c => c[1]);
+    const pathBounds = {
+      left: Math.min(...allX),
+      top: Math.min(...allY),
+      right: Math.max(...allX),
+      bottom: Math.max(...allY),
+      width: Math.max(...allX) - Math.min(...allX),
+      height: Math.max(...allY) - Math.min(...allY)
+    };
+    
     console.log(`🎨 Creating path at AI coords [${aiObject.coordinates[0]?.[0]}, ${aiObject.coordinates[0]?.[1]}] -> canvas coords [${firstCoord[0]}, ${firstCoord[1]}]`);
-    console.log(`🎨 Path has ${aiObject.coordinates.length} points, fill="${fill}", stroke="${stroke}"`);
+    console.log(`🎨 Path: ${aiObject.coordinates.length} points, fill="${fill}", stroke="${stroke}", strokeWidth=${strokeWidth}`);
+    console.log(`🎨 Path bounds:`, pathBounds);
+    console.log(`🎨 VISIBILITY CHECK: position visible=${firstCoord[0] >= 0 && firstCoord[1] >= 0 && firstCoord[0] <= 1200 && firstCoord[1] <= 800}`);
+    console.log(`🎨 VISIBILITY CHECK: has size=${pathBounds.width > 0 && pathBounds.height > 0}`);
     
     return {
       type: 'path',
@@ -912,8 +948,8 @@ export class AdobeAIParser {
       top: firstCoord[1],
       fill: fill,
       stroke: stroke,
-      strokeWidth: Math.max(aiObject.strokeWidth || 1, 0.5),
-      opacity: aiObject.opacity || 1,
+      strokeWidth: strokeWidth,
+      opacity: Math.max(aiObject.opacity || 1, 0.7), // Ensure minimum visibility
       scaleX: 1,
       scaleY: 1,
     };
@@ -926,7 +962,12 @@ export class AdobeAIParser {
     // Transform coordinates to canvas space
     const transformedCoords = this.transformCoordinates(aiObject.coordinates[0] || [100, 100], metadata);
     
-    console.log(`📝 Creating text at AI coords [${aiObject.coordinates[0]?.[0]}, ${aiObject.coordinates[0]?.[1]}] -> canvas coords [${transformedCoords[0]}, ${transformedCoords[1]}]`);
+    console.log('🔍 DETAILED TEXT DEBUG:');
+    console.log(`  Original AI coords: [${aiObject.coordinates[0]?.[0]}, ${aiObject.coordinates[0]?.[1]}]`);
+    console.log(`  Transformed coords: [${transformedCoords[0]}, ${transformedCoords[1]}]`);
+    console.log(`  Text content: "${aiObject.text || 'Imported Text'}"`);
+    console.log(`  Font size: ${Math.max(aiObject.fontSize || 24, 24)} (min 24px for visibility)`);
+    console.log(`  VISIBILITY CHECK: position=${transformedCoords[0] >= 0 && transformedCoords[1] >= 0 && transformedCoords[0] <= 1200 && transformedCoords[1] <= 800}`);
     
     const textObject = {
       type: 'text',
@@ -934,9 +975,9 @@ export class AdobeAIParser {
       left: transformedCoords[0],
       top: transformedCoords[1],
       fontFamily: getFontForText(aiObject.fontFamily || 'default', fontMap || {}, 'Arial'),
-      fontSize: Math.max(aiObject.fontSize || 14, 10), // Ensure minimum readable size
-      fill: aiObject.fill || '#333333',
-      opacity: aiObject.opacity || 1,
+      fontSize: Math.max(aiObject.fontSize || 24, 24), // LARGER minimum size for visibility
+      fill: aiObject.fill || '#FF5722', // BRIGHT ORANGE for visibility
+      opacity: Math.max(aiObject.opacity || 1, 0.9), // High opacity for text visibility
       scaleX: 1,
       scaleY: 1,
       textAlign: isMultiLine ? 'center' : 'left',

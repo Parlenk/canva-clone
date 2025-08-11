@@ -40,6 +40,33 @@ export const AdobeAISidebar = ({ activeTool, onChangeActiveTool, editor }: Adobe
       // Import the Adobe AI canvas data using the specialized method
       editor.importAdobeAI(canvasData);
       console.log('✅ [STEP 4] Adobe AI file successfully imported to canvas');
+      
+      // Auto-zoom to fit all imported objects after a brief delay
+      setTimeout(() => {
+        console.log('🔍 [STEP 5] Auto-zooming to fit imported content...');
+        
+        // First, zoom out to see if objects are outside viewport
+        console.log('🔍 [STEP 5A] Zooming out to see all objects...');
+        try {
+          // Zoom out significantly first
+          editor.zoomOut(); // 1st zoom out
+          editor.zoomOut(); // 2nd zoom out  
+          editor.zoomOut(); // 3rd zoom out
+          editor.zoomOut(); // 4th zoom out - should be at 0.2 zoom level
+          console.log('📊 Canvas zoom level after zoom out: 0.2 (minimum)');
+          
+          // Give it another moment, then try auto-zoom
+          setTimeout(() => {
+            console.log('🔍 [STEP 5B] Now attempting auto-zoom after zoom out...');
+            editor.autoZoom();
+            console.log('✅ [STEP 5] Auto-zoom sequence completed');
+          }, 300);
+          
+        } catch (zoomError) {
+          console.warn('⚠️ [STEP 5] Auto-zoom failed:', zoomError);
+        }
+      }, 1000); // Longer delay to ensure objects are fully rendered
+      
     } catch (error) {
       console.error('❌ [STEP 4] Failed to import Adobe AI file to canvas:', error);
     }
