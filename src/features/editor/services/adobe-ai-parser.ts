@@ -5,6 +5,286 @@
  * Adobe AI files are PostScript-based with embedded content and metadata.
  */
 
+/**
+ * Font mapping for Adobe AI files to web-safe fonts
+ * Maps common Adobe/professional fonts to available web fonts
+ */
+const FONT_MAPPING: Record<string, string> = {
+  // Adobe Font Families
+  'MinionPro-Regular': 'Georgia',
+  'MinionPro': 'Georgia',
+  'Minion': 'Georgia',
+  'MinionWeb': 'Georgia',
+  'AdobeGaramondPro-Regular': 'Garamond',
+  'AdobeGaramondPro': 'Garamond',
+  'Adobe Garamond': 'Garamond',
+  
+  // Helvetica Family
+  'Helvetica-Bold': 'Arial Black',
+  'Helvetica-Regular': 'Arial',
+  'HelveticaNeue-Regular': 'Arial',
+  'HelveticaNeue': 'Arial',
+  'Helvetica Neue': 'Arial',
+  'Helvetica-Light': 'Arial',
+  'Helvetica': 'Arial',
+  
+  // Times Family
+  'TimesNewRomanPS-BoldMT': 'Times New Roman',
+  'TimesNewRomanPSMT': 'Times New Roman',
+  'Times-Roman': 'Times New Roman',
+  'Times-Bold': 'Times New Roman',
+  'Times': 'Times New Roman',
+  
+  // Arial variations
+  'ArialMT': 'Arial',
+  'Arial-BoldMT': 'Arial Black',
+  'Arial-Regular': 'Arial',
+  'Arial-Bold': 'Arial Black',
+  
+  // Other common fonts
+  'Verdana-Regular': 'Verdana',
+  'Verdana-Bold': 'Verdana',
+  'Tahoma-Regular': 'Tahoma',
+  'Tahoma-Bold': 'Tahoma',
+  'TrebuchetMS': 'Trebuchet MS',
+  'Georgia-Regular': 'Georgia',
+  'Georgia-Bold': 'Georgia',
+  
+  // Monospace fonts
+  'CourierNewPS-BoldMT': 'Courier New',
+  'CourierNewPSMT': 'Courier New',
+  'Courier-Bold': 'Courier New',
+  'Courier': 'Courier New',
+  'Monaco': 'Lucida Console',
+  'Consolas': 'Lucida Console',
+  
+  // Script fonts
+  'BrushScriptMT': 'Brush Script MT',
+  'Brush Script': 'Brush Script MT',
+  
+  // Sans-serif fallbacks
+  'Futura': 'Arial',
+  'Avenir': 'Arial',
+  'Proxima Nova': 'Arial',
+  'Open Sans': 'Arial',
+  'Lato': 'Arial',
+  'Roboto': 'Arial',
+  
+  // Serif fallbacks
+  'Caslon': 'Georgia',
+  'Baskerville': 'Georgia',
+  'Palatino Linotype': 'Palatino',
+  'Book Antiqua': 'Palatino',
+  
+  // Display fonts
+  'Impact-Regular': 'Impact',
+  'Franklin Gothic': 'Arial Black',
+  'Univers': 'Arial',
+  
+  // Generic fallbacks
+  'sans-serif': 'Arial',
+  'serif': 'Times New Roman',
+  'monospace': 'Courier New',
+  'cursive': 'Brush Script MT',
+  'fantasy': 'Impact',
+};
+
+/**
+ * Available fonts in the editor (matches types.ts)
+ */
+const AVAILABLE_FONTS = [
+  'Arial',
+  'Arial Black', 
+  'Verdana',
+  'Helvetica',
+  'Tahoma',
+  'Trebuchet MS',
+  'Times New Roman',
+  'Georgia',
+  'Garamond',
+  'Courier New',
+  'Brush Script MT',
+  'Palatino',
+  'Bookman',
+  'Comic Sans MS',
+  'Impact',
+  'Lucida Sans Unicode',
+  'Geneva',
+  'Lucida Console',
+];
+
+/**
+ * Map a font name from AI file to a web-safe font available in the editor
+ */
+function mapFontToWebSafe(fontName: string): string {
+  if (!fontName) return 'Arial';
+  
+  // Direct match
+  if (AVAILABLE_FONTS.includes(fontName)) {
+    return fontName;
+  }
+  
+  // Check mapping table
+  if (FONT_MAPPING[fontName]) {
+    return FONT_MAPPING[fontName];
+  }
+  
+  // Try partial matches (case insensitive)
+  const normalizedFont = fontName.toLowerCase();
+  
+  // Helvetica variations
+  if (normalizedFont.includes('helvetica')) {
+    return normalizedFont.includes('bold') ? 'Arial Black' : 'Arial';
+  }
+  
+  // Times variations
+  if (normalizedFont.includes('times')) {
+    return 'Times New Roman';
+  }
+  
+  // Arial variations
+  if (normalizedFont.includes('arial')) {
+    return normalizedFont.includes('bold') || normalizedFont.includes('black') ? 'Arial Black' : 'Arial';
+  }
+  
+  // Verdana variations
+  if (normalizedFont.includes('verdana')) {
+    return 'Verdana';
+  }
+  
+  // Georgia variations
+  if (normalizedFont.includes('georgia')) {
+    return 'Georgia';
+  }
+  
+  // Garamond variations
+  if (normalizedFont.includes('garamond')) {
+    return 'Garamond';
+  }
+  
+  // Courier variations
+  if (normalizedFont.includes('courier')) {
+    return 'Courier New';
+  }
+  
+  // Impact variations
+  if (normalizedFont.includes('impact')) {
+    return 'Impact';
+  }
+  
+  // Script font variations
+  if (normalizedFont.includes('script') || normalizedFont.includes('brush')) {
+    return 'Brush Script MT';
+  }
+  
+  // Generic categorization
+  if (normalizedFont.includes('sans') || normalizedFont.includes('arial') || normalizedFont.includes('helvetica')) {
+    return 'Arial';
+  }
+  
+  if (normalizedFont.includes('serif') || normalizedFont.includes('times') || normalizedFont.includes('georgia')) {
+    return 'Times New Roman';
+  }
+  
+  if (normalizedFont.includes('mono') || normalizedFont.includes('courier') || normalizedFont.includes('console')) {
+    return 'Courier New';
+  }
+  
+  // Default fallback
+  console.log(`⚠️ Unknown font "${fontName}" mapped to Arial`);
+  return 'Arial';
+}
+
+/**
+ * Extract font information from AI file content
+ */
+function extractFontsFromAI(content: string): Record<string, string> {
+  const fontMap: Record<string, string> = {};
+  
+  try {
+    // PostScript font definitions
+    const fontPatterns = [
+      // Font name definitions
+      /\/(\w+)\s+findfont/g,
+      /\/Font\s+\/(\w+)/g,
+      /\/FontName\s+\/(\w+)/g,
+      /\/BaseFont\s+\/([^\s\/\[\]<>()]+)/g,
+      // Font face definitions  
+      /\/F(\d+)\s+\/([^\s\/\[\]<>()]+)/g,
+      // Font dictionary entries
+      /(\d+)\s+\d+\s+obj[\s\S]*?\/Type\s*\/Font[\s\S]*?\/BaseFont\s*\/([^\s\/\[\]<>()]+)/g,
+      // Font resource mappings
+      /\/Font\s*<<[\s\S]*?\/F(\d+)\s+(\d+)\s+\d+\s+R/g,
+    ];
+    
+    let fontIdCounter = 1;
+    
+    for (const pattern of fontPatterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        const fontId = match[1];
+        const fontName = match[2] || match[1];
+        
+        if (fontName && fontName.length > 1) {
+          const webSafeFont = mapFontToWebSafe(fontName);
+          fontMap[`F${fontIdCounter}`] = webSafeFont;
+          fontMap[fontId] = webSafeFont;
+          fontMap[fontName] = webSafeFont;
+          
+          console.log(`🔤 Font mapping: "${fontName}" -> "${webSafeFont}"`);
+          fontIdCounter++;
+        }
+      }
+    }
+    
+    // PDF-specific font extraction
+    if (content.includes('%PDF-')) {
+      const pdfFontPattern = /\/BaseFont\s*\/([^\s\/\[<>()]*)/g;
+      let pdfMatch;
+      
+      while ((pdfMatch = pdfFontPattern.exec(content)) !== null) {
+        const fontName = pdfMatch[1];
+        if (fontName && fontName.length > 1) {
+          const webSafeFont = mapFontToWebSafe(fontName);
+          fontMap[fontName] = webSafeFont;
+          console.log(`📄 PDF Font: "${fontName}" -> "${webSafeFont}"`);
+        }
+      }
+    }
+    
+    // Add default mapping if no fonts found
+    if (Object.keys(fontMap).length === 0) {
+      fontMap['default'] = 'Arial';
+      console.log('⚠️ No fonts found in AI file, using Arial as default');
+    }
+    
+  } catch (error) {
+    console.warn('⚠️ Error extracting fonts:', error);
+    fontMap['default'] = 'Arial';
+  }
+  
+  return fontMap;
+}
+
+/**
+ * Get appropriate font for text object based on font ID or name
+ */
+function getFontForText(fontId: string, fontMap: Record<string, string>, fallback: string = 'Arial'): string {
+  // Try exact match first
+  if (fontMap[fontId]) {
+    return fontMap[fontId];
+  }
+  
+  // Try mapping the fontId directly
+  const mapped = mapFontToWebSafe(fontId);
+  if (mapped !== 'Arial' || fontId.toLowerCase().includes('arial')) {
+    return mapped;
+  }
+  
+  // Use default or fallback
+  return fontMap['default'] || fallback;
+}
+
 interface AIFileMetadata {
   version: string;
   creator: string;
@@ -45,6 +325,7 @@ interface ParsedAIFile {
     name: string;
     bounds: { x: number; y: number; width: number; height: number };
   }>;
+  fontMap?: Record<string, string>;
 }
 
 export class AdobeAIParser {
@@ -108,18 +389,23 @@ export class AdobeAIParser {
       const fileBuffer = await this.readEntireFile(file);
       const fileContent = new TextDecoder().decode(fileBuffer);
 
+      // Extract font mappings first
+      console.log('🔤 Extracting font information...');
+      const fontMap = extractFontsFromAI(fileContent);
+      console.log('📝 Font map created:', fontMap);
+
       // Check if it's PDF-based AI
       if (fileContent.includes('%PDF-')) {
         console.log('📄 Detected PDF-based AI file');
-        return this.parsePDFBasedAI(fileContent);
+        return this.parsePDFBasedAI(fileContent, fontMap);
       }
 
       // Parse metadata
       const metadata = this.parseMetadata(fileContent);
       console.log('📋 Extracted metadata:', metadata);
 
-      // Parse vector objects
-      const objects = this.parseVectorObjects(fileContent);
+      // Parse vector objects with font information
+      const objects = this.parseVectorObjects(fileContent, fontMap);
       console.log('🔍 Found', objects.length, 'vector objects');
 
       // Parse artboards
@@ -162,6 +448,7 @@ export class AdobeAIParser {
         metadata,
         objects,
         artboards,
+        fontMap
       };
 
     } catch (error) {
@@ -201,7 +488,8 @@ export class AdobeAIParser {
         artboards: [{
           name: 'Default Artboard',
           bounds: { x: 0, y: 0, width: 800, height: 600 }
-        }]
+        }],
+        fontMap: {}
       };
     }
   }
@@ -209,7 +497,7 @@ export class AdobeAIParser {
   /**
    * Parse PDF-based AI files (common in newer Illustrator versions)
    */
-  private static parsePDFBasedAI(content: string): ParsedAIFile {
+  private static parsePDFBasedAI(content: string, fontMap?: Record<string, string>): ParsedAIFile {
     console.log('🔍 Starting real PDF-based AI parsing...');
     
     try {
@@ -218,7 +506,7 @@ export class AdobeAIParser {
       console.log('📋 PDF Metadata extracted:', metadata);
 
       // Parse PDF streams containing vector data
-      const objects = this.parsePDFStreams(content);
+      const objects = this.parsePDFStreams(content, fontMap);
       console.log(`🎨 Found ${objects.length} objects in PDF streams`);
 
       // Extract artboards from PDF pages
@@ -234,7 +522,8 @@ export class AdobeAIParser {
       return {
         metadata,
         objects,
-        artboards
+        artboards,
+        fontMap
       };
 
     } catch (error) {
@@ -257,7 +546,8 @@ export class AdobeAIParser {
         artboards: [{
           name: 'Recovery Artboard',
           bounds: { x: 0, y: 0, width: fallbackWidth, height: fallbackHeight }
-        }]
+        }],
+        fontMap: fontMap || {}
       };
     }
   }
@@ -282,7 +572,7 @@ export class AdobeAIParser {
           stroke: aiObject.stroke
         });
         
-        const fabricObject = this.convertAIObjectToFabric(aiObject, parsedData.metadata);
+        const fabricObject = this.convertAIObjectToFabric(aiObject, parsedData.metadata, parsedData.fontMap || {});
         console.log(`🎯 convertAIObjectToFabric returned for ${aiObject.id}:`, fabricObject);
         
         if (fabricObject) {
@@ -379,7 +669,7 @@ export class AdobeAIParser {
     };
   }
 
-  private static parseVectorObjects(content: string): AIPathData[] {
+  private static parseVectorObjects(content: string, fontMap?: Record<string, string>): AIPathData[] {
     const objects: AIPathData[] = [];
     
     // This is a simplified parser - real AI files are much more complex
@@ -500,13 +790,13 @@ export class AdobeAIParser {
     return coordinates;
   }
 
-  private static convertAIObjectToFabric(aiObject: AIPathData, metadata: AIFileMetadata): any | null {
+  private static convertAIObjectToFabric(aiObject: AIPathData, metadata: AIFileMetadata, fontMap?: Record<string, string>): any | null {
     try {
       switch (aiObject.type) {
         case 'path':
           return this.createFabricPath(aiObject, metadata);
         case 'text':
-          return this.createFabricText(aiObject, metadata);
+          return this.createFabricText(aiObject, metadata, fontMap);
         case 'image':
           return this.createFabricImage(aiObject, metadata);
         default:
@@ -565,7 +855,7 @@ export class AdobeAIParser {
     };
   }
 
-  private static createFabricText(aiObject: AIPathData, metadata: AIFileMetadata): any {
+  private static createFabricText(aiObject: AIPathData, metadata: AIFileMetadata, fontMap?: Record<string, string>): any {
     // Handle multi-line text by centering properly
     const isMultiLine = aiObject.text?.includes('\n') || false;
     
@@ -574,7 +864,7 @@ export class AdobeAIParser {
       text: aiObject.text || 'Imported Text',
       left: aiObject.coordinates[0]?.[0] || 100,
       top: aiObject.coordinates[0]?.[1] || 100,
-      fontFamily: aiObject.fontFamily || 'Arial',
+      fontFamily: getFontForText(aiObject.fontFamily || 'default', fontMap || {}, 'Arial'),
       fontSize: aiObject.fontSize || 14,
       fill: aiObject.fill || '#333333',
       opacity: aiObject.opacity || 1,
@@ -704,7 +994,7 @@ export class AdobeAIParser {
   /**
    * Parse PDF streams to extract vector objects
    */
-  private static parsePDFStreams(content: string): AIPathData[] {
+  private static parsePDFStreams(content: string, fontMap?: Record<string, string>): AIPathData[] {
     console.log('🔄 Parsing PDF streams for vector data...');
     const objects: AIPathData[] = [];
     let objectId = 0;
@@ -718,19 +1008,19 @@ export class AdobeAIParser {
         const streamContent = streamMatch[1];
         
         // Parse different types of drawing commands
-        objects.push(...this.parseStreamDrawingCommands(streamContent, objectId));
+        objects.push(...this.parseStreamDrawingCommands(streamContent, objectId, fontMap));
         objectId += objects.length;
         
         // Parse text objects in streams
-        objects.push(...this.parseStreamTextCommands(streamContent, objectId));
+        objects.push(...this.parseStreamTextCommands(streamContent, objectId, fontMap));
         objectId += objects.length;
         
         // Parse image references
-        objects.push(...this.parseStreamImages(streamContent, objectId));
+        objects.push(...this.parseStreamImages(streamContent, objectId, fontMap));
         objectId += objects.length;
         
         // Parse gradients and complex effects
-        objects.push(...this.parseComplexEffects(streamContent, objectId));
+        objects.push(...this.parseComplexEffects(streamContent, objectId, fontMap));
         objectId += objects.length;
       }
 
@@ -755,7 +1045,7 @@ export class AdobeAIParser {
   /**
    * Parse drawing commands from PDF stream
    */
-  private static parseStreamDrawingCommands(streamContent: string, startId: number): AIPathData[] {
+  private static parseStreamDrawingCommands(streamContent: string, startId: number, fontMap?: Record<string, string>): AIPathData[] {
     const objects: AIPathData[] = [];
     let objectId = startId;
 
@@ -849,7 +1139,7 @@ export class AdobeAIParser {
   /**
    * Parse text commands from PDF stream
    */
-  private static parseStreamTextCommands(streamContent: string, startId: number): AIPathData[] {
+  private static parseStreamTextCommands(streamContent: string, startId: number, fontMap?: Record<string, string>): AIPathData[] {
     const objects: AIPathData[] = [];
     let objectId = startId;
 
@@ -857,16 +1147,19 @@ export class AdobeAIParser {
       // Parse text showing commands
       const textPattern = /\((.*?)\)\s*Tj/g;
       const textPositionPattern = /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+Td/g;
-      const fontSizePattern = /\/F\d+\s+(-?\d+(?:\.\d+)?)\s+Tf/g;
+      const fontSizePattern = /\/(F\d+)\s+(-?\d+(?:\.\d+)?)\s+Tf/g;
       
       let currentX = 0;
       let currentY = 0;
       let currentFontSize = 12;
+      let currentFontId = 'default';
       
-      // Extract font size
+      // Extract font size and ID
       let fontMatch;
       while ((fontMatch = fontSizePattern.exec(streamContent)) !== null) {
-        currentFontSize = parseFloat(fontMatch[1]);
+        currentFontId = fontMatch[1]; // e.g., 'F1', 'F2' 
+        currentFontSize = parseFloat(fontMatch[2]);
+        console.log(`🔤 Font reference: ${currentFontId} size ${currentFontSize}`);
       }
 
       // Extract text positions
@@ -888,7 +1181,7 @@ export class AdobeAIParser {
             coordinates: [[currentX, currentY]],
             text: this.decodePDFText(textContent),
             fontSize: currentFontSize,
-            fontFamily: 'Arial', // Default, would need more parsing for actual font
+            fontFamily: getFontForText(currentFontId, fontMap || {}, 'Arial'),
             fill: '#000000' // Default text color
           });
           
@@ -907,7 +1200,7 @@ export class AdobeAIParser {
   /**
    * Parse image references from PDF stream
    */
-  private static parseStreamImages(streamContent: string, startId: number): AIPathData[] {
+  private static parseStreamImages(streamContent: string, startId: number, fontMap?: Record<string, string>): AIPathData[] {
     const objects: AIPathData[] = [];
     let objectId = startId;
 
@@ -944,7 +1237,7 @@ export class AdobeAIParser {
   /**
    * Parse complex effects like gradients, shadows, and filters
    */
-  private static parseComplexEffects(streamContent: string, startId: number): AIPathData[] {
+  private static parseComplexEffects(streamContent: string, startId: number, fontMap?: Record<string, string>): AIPathData[] {
     const objects: AIPathData[] = [];
     let objectId = startId;
 
