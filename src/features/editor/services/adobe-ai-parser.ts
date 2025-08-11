@@ -501,6 +501,39 @@ export class AdobeAIParser {
     console.log('🔍 Starting real PDF-based AI parsing...');
     
     try {
+      // Enhanced debugging for modern AI files
+      console.log('🔍 ENHANCED DEBUG: AI file analysis...');
+      console.log('📄 File size:', content.length, 'characters');
+      console.log('🎯 PDF version:', content.match(/%PDF-(\d+\.\d+)/)?.[1] || 'Unknown');
+      
+      // Count different PDF elements
+      const streamCount = (content.match(/stream\s*[\s\S]*?endstream/g) || []).length;
+      const objCount = (content.match(/\d+\s+\d+\s+obj/g) || []).length;
+      const pageCount = (content.match(/\/Type\s*\/Page(?:\s|\/)/g) || []).length;
+      const fontCount = (content.match(/\/Type\s*\/Font(?:\s|\/)/g) || []).length;
+      const textCount = (content.match(/\([^)]*\)\s*T[jJ]/g) || []).length;
+      const pathCount = (content.match(/[mlhvcsqtaz]\s/gi) || []).length;
+      
+      console.log('🔢 PDF Structure Analysis:', {
+        streams: streamCount,
+        objects: objCount,
+        pages: pageCount,
+        fonts: fontCount,
+        textElements: textCount,
+        pathCommands: pathCount
+      });
+
+      // Look for Illustrator-specific markers
+      const hasAIPrivateData = content.includes('AI_PRIVATE_DATA');
+      const hasAdobeDict = content.includes('/Adobe_CFFD_1');
+      const hasIllustratorData = content.includes('Adobe_Illustrator');
+      
+      console.log('🎨 Illustrator-specific content:', {
+        privateData: hasAIPrivateData,
+        adobeDict: hasAdobeDict,
+        illustratorData: hasIllustratorData
+      });
+
       // Extract PDF metadata
       const metadata = this.extractPDFMetadata(content);
       console.log('📋 PDF Metadata extracted:', metadata);
@@ -509,6 +542,25 @@ export class AdobeAIParser {
       const objects = this.parsePDFStreams(content, fontMap);
       console.log(`🎨 Found ${objects.length} objects in PDF streams`);
 
+      // Try to extract AI private data if present (contains the real vector data)
+      if (hasAIPrivateData) {
+        console.log('🔍 Found AI_PRIVATE_DATA - attempting enhanced parsing...');
+        const aiPrivateStart = content.indexOf('AI_PRIVATE_DATA');
+        const aiPrivateEnd = content.indexOf('EndAIPrivateData', aiPrivateStart);
+        
+        if (aiPrivateStart > 0 && aiPrivateEnd > aiPrivateStart) {
+          const aiPrivateData = content.substring(aiPrivateStart, aiPrivateEnd);
+          console.log(`📊 AI Private data block size: ${aiPrivateData.length} characters`);
+          
+          // Look for Illustrator drawing commands in private data
+          const illustratorCommands = this.parseIllustratorPrivateData(aiPrivateData, fontMap);
+          if (illustratorCommands.length > 0) {
+            console.log(`🎨 Extracted ${illustratorCommands.length} objects from AI private data!`);
+            objects.push(...illustratorCommands);
+          }
+        }
+      }
+
       // Extract artboards from PDF pages
       const artboards = this.extractPDFArtboards(content);
       console.log(`🖼️ Found ${artboards.length} artboards`);
@@ -516,7 +568,9 @@ export class AdobeAIParser {
       // If no objects found, create informative placeholder
       if (objects.length === 0) {
         console.log('⚠️ No parseable objects found, creating informative placeholder');
-        objects.push(...this.createInformativePlaceholders(metadata.pageSize.width, metadata.pageSize.height));
+        objects.push(...this.createInformativePlaceholders(metadata.pageSize.width, metadata.pageSize.height, fontMap));
+      } else {
+        console.log(`✅ Successfully parsed ${objects.length} objects from PDF-based AI file`);
       }
 
       return {
@@ -992,6 +1046,147 @@ export class AdobeAIParser {
   }
 
   /**
+   * Parse Illustrator private data (contains the real vector content)
+   */
+  private static parseIllustratorPrivateData(aiData: string, fontMap?: Record<string, string>): AIPathData[] {
+    const objects: AIPathData[] = [];
+    let objectId = 0;
+
+    try {
+      console.log('🎨 Parsing Illustrator private data for vector content...');
+      
+      // Look for PostScript-style commands in AI private data
+      const pathCommands = [
+        /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+m/g,  // moveto
+        /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+l/g,  // lineto
+        /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+c/g,  // curveto
+      ];
+
+      // Look for text objects in AI format
+      const textPattern = /\[(.*?)\]\s*TJ/g;  // Illustrator text operator
+      const fontPattern = /\/(\w+)\s+(\d+(?:\.\d+)?)\s+Tf/g;  // Font selection
+      
+      // Look for rectangles and basic shapes
+      const rectPattern = /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+re/g;
+      
+      // Parse rectangles
+      let rectMatch;
+      while ((rectMatch = rectPattern.exec(aiData)) !== null) {
+        const x = parseFloat(rectMatch[1]);
+        const y = parseFloat(rectMatch[2]);
+        const width = parseFloat(rectMatch[3]);
+        const height = parseFloat(rectMatch[4]);
+        
+        console.log(`📐 AI Private: Found rectangle ${x}, ${y}, ${width}x${height}`);
+        
+        objects.push({
+          id: `ai_private_rect_${objectId++}`,
+          type: 'path',
+          coordinates: [
+            [x, y], 
+            [x + width, y], 
+            [x + width, y + height], 
+            [x, y + height]
+          ],
+          fill: '#4CAF50',  // Green to distinguish from PDF objects
+          stroke: '#2E7D32',
+          strokeWidth: 1
+        });
+      }
+
+      // Parse text objects
+      let textMatch;
+      let currentFontSize = 12;
+      let currentFont = 'Arial';
+      
+      // Extract font information
+      let fontMatch;
+      while ((fontMatch = fontPattern.exec(aiData)) !== null) {
+        const fontName = fontMatch[1];
+        currentFontSize = parseFloat(fontMatch[2]);
+        currentFont = getFontForText(fontName, fontMap || {}, 'Arial');
+        console.log(`🔤 AI Private: Font ${fontName} -> ${currentFont}, size ${currentFontSize}`);
+      }
+
+      while ((textMatch = textPattern.exec(aiData)) !== null) {
+        const textContent = textMatch[1];
+        
+        if (textContent && textContent.trim()) {
+          console.log(`📝 AI Private: Found text "${textContent}"`);
+          
+          objects.push({
+            id: `ai_private_text_${objectId++}`,
+            type: 'text',
+            coordinates: [[100, 100 + (objectId * 30)]],  // Stack texts vertically
+            text: textContent.replace(/\\([\\()])/g, '$1'),  // Decode escaped characters
+            fontSize: currentFontSize,
+            fontFamily: currentFont,
+            fill: '#1976D2'  // Blue to distinguish from PDF text
+          });
+        }
+      }
+
+      // Look for path data
+      let currentPath: number[][] = [];
+      
+      for (const commandPattern of pathCommands) {
+        let pathMatch;
+        while ((pathMatch = commandPattern.exec(aiData)) !== null) {
+          if (pathMatch.length >= 3) {
+            const x = parseFloat(pathMatch[1]);
+            const y = parseFloat(pathMatch[2]);
+            currentPath.push([x, y]);
+            console.log(`🎨 AI Private: Path point ${x}, ${y}`);
+          }
+        }
+      }
+
+      if (currentPath.length > 1) {
+        objects.push({
+          id: `ai_private_path_${objectId++}`,
+          type: 'path',
+          coordinates: currentPath,
+          fill: 'none',
+          stroke: '#FF9800',  // Orange to distinguish from PDF paths
+          strokeWidth: 2
+        });
+      }
+
+      console.log(`✅ AI Private data parsing completed: ${objects.length} objects found`);
+      
+    } catch (error) {
+      console.warn('⚠️ Error parsing AI private data:', error);
+    }
+
+    return objects;
+  }
+
+  /**
+   * Check if stream content is binary or compressed
+   */
+  private static isBinaryOrCompressedStream(streamContent: string): boolean {
+    // Check for binary markers
+    if (streamContent.includes('\0') || streamContent.includes('\xFF')) {
+      return true;
+    }
+    
+    // Check for compression filters
+    const hasFlateFilter = streamContent.includes('FlateDecode') || streamContent.includes('/FlateDecode');
+    const hasDCTFilter = streamContent.includes('DCTDecode') || streamContent.includes('/DCTDecode');
+    const hasLZWFilter = streamContent.includes('LZWDecode') || streamContent.includes('/LZWDecode');
+    
+    // Check if content looks like compressed data (high ratio of non-printable chars)
+    const nonPrintableCount = streamContent.split('').filter(char => {
+      const code = char.charCodeAt(0);
+      return code < 32 && code !== 9 && code !== 10 && code !== 13; // Not tab, newline, or carriage return
+    }).length;
+    
+    const nonPrintableRatio = nonPrintableCount / streamContent.length;
+    
+    return hasFlateFilter || hasDCTFilter || hasLZWFilter || nonPrintableRatio > 0.3;
+  }
+
+  /**
    * Parse PDF streams to extract vector objects
    */
   private static parsePDFStreams(content: string, fontMap?: Record<string, string>): AIPathData[] {
@@ -1000,28 +1195,62 @@ export class AdobeAIParser {
     let objectId = 0;
 
     try {
-      // Find all stream objects
+      // Find all stream objects with enhanced filtering
       const streamPattern = /stream\s*([\s\S]*?)\s*endstream/g;
       let streamMatch;
+      let streamIndex = 0;
       
       while ((streamMatch = streamPattern.exec(content)) !== null) {
         const streamContent = streamMatch[1];
+        streamIndex++;
         
-        // Parse different types of drawing commands
-        objects.push(...this.parseStreamDrawingCommands(streamContent, objectId, fontMap));
-        objectId += objects.length;
+        console.log(`🎯 Processing stream ${streamIndex}, length: ${streamContent.length}`);
         
-        // Parse text objects in streams
-        objects.push(...this.parseStreamTextCommands(streamContent, objectId, fontMap));
-        objectId += objects.length;
+        // Skip binary or compressed streams (common in AI files)
+        if (this.isBinaryOrCompressedStream(streamContent)) {
+          console.log(`⏭️ Skipping binary/compressed stream ${streamIndex}`);
+          continue;
+        }
         
-        // Parse image references
-        objects.push(...this.parseStreamImages(streamContent, objectId, fontMap));
-        objectId += objects.length;
+        const initialObjectCount = objects.length;
         
-        // Parse gradients and complex effects
-        objects.push(...this.parseComplexEffects(streamContent, objectId, fontMap));
-        objectId += objects.length;
+        // Parse drawing commands first (most important for vector content)
+        const drawingObjects = this.parseStreamDrawingCommands(streamContent, objectId, fontMap);
+        if (drawingObjects.length > 0) {
+          console.log(`✅ Found ${drawingObjects.length} drawing objects in stream ${streamIndex}`);
+          objects.push(...drawingObjects);
+          objectId += drawingObjects.length;
+        }
+        
+        // Parse text objects
+        const textObjects = this.parseStreamTextCommands(streamContent, objectId, fontMap);
+        if (textObjects.length > 0) {
+          console.log(`📝 Found ${textObjects.length} text objects in stream ${streamIndex}`);
+          objects.push(...textObjects);
+          objectId += textObjects.length;
+        }
+        
+        // Only parse images if no other content found
+        if (objects.length === initialObjectCount) {
+          const imageObjects = this.parseStreamImages(streamContent, objectId, fontMap);
+          if (imageObjects.length > 0) {
+            console.log(`🖼️ Found ${imageObjects.length} image objects in stream ${streamIndex}`);
+            objects.push(...imageObjects);
+            objectId += imageObjects.length;
+          }
+        }
+        
+        // REDUCED: Only parse complex effects if no real content found in this stream
+        if (objects.length === initialObjectCount) {
+          const effectObjects = this.parseComplexEffects(streamContent, objectId, fontMap);
+          // Limit effect placeholders to max 2 per stream to avoid clutter
+          const limitedEffects = effectObjects.slice(0, 2);
+          if (limitedEffects.length > 0) {
+            console.log(`🎨 Found ${limitedEffects.length} effects in stream ${streamIndex}`);
+            objects.push(...limitedEffects);
+            objectId += limitedEffects.length;
+          }
+        }
       }
 
       // Parse XObject references (often contain Illustrator vector data)
@@ -1050,27 +1279,70 @@ export class AdobeAIParser {
     let objectId = startId;
 
     try {
-      // Parse path construction commands
-      const pathCommands = ['m', 'l', 'c', 's', 'v', 'y', 'h']; // moveto, lineto, curveto, etc.
-      const pathPattern = new RegExp(`(-?\\d+(?:\\.\\d+)?)\\s+(-?\\d+(?:\\.\\d+)?)\\s+(${pathCommands.join('|')})`, 'g');
+      // Enhanced path parsing with better command recognition
+      console.log(`🎨 Parsing drawing commands in stream content (${streamContent.length} chars)`);
+      
+      // Look for standard PDF drawing operators
+      const pathOperators = [
+        'm', 'l', 'c', 'v', 'y', 'h',  // path construction
+        'f', 'F', 'f*', 'B', 'B*', 'b', 'b*', 'S', 's',  // path painting
+        're',  // rectangle
+        'rg', 'RG', 'g', 'G',  // color operators
+        'w',  // line width
+        'cm'   // transformation matrix
+      ];
+      
+      // Find numeric coordinates followed by path operators
+      const coordinatePattern = /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+([mlcvyhfFBbSsre]+|rg|RG|[gGw]|cm)/g;
+      const rectanglePattern = /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+re/g;
       
       let currentPath: number[][] = [];
-      let currentFill: string | undefined;
-      let currentStroke: string | undefined;
+      let currentFill: string = '#000000';
+      let currentStroke: string = '#000000';
       let currentStrokeWidth: number = 1;
+      let hasPathCommands = false;
       
+      // First, extract rectangles (very common in design files like Alfamart)
+      let rectMatch;
+      while ((rectMatch = rectanglePattern.exec(streamContent)) !== null) {
+        const x = parseFloat(rectMatch[1]);
+        const y = parseFloat(rectMatch[2]);
+        const width = parseFloat(rectMatch[3]);
+        const height = parseFloat(rectMatch[4]);
+        
+        console.log(`📐 Found rectangle: ${x}, ${y}, ${width}x${height}`);
+        
+        objects.push({
+          id: `pdf_rect_${objectId++}`,
+          type: 'path',
+          coordinates: [
+            [x, y], 
+            [x + width, y], 
+            [x + width, y + height], 
+            [x, y + height]
+          ],
+          fill: currentFill,
+          stroke: currentStroke,
+          strokeWidth: currentStrokeWidth
+        });
+        hasPathCommands = true;
+      }
+
       // Parse color commands
       const fillColorPattern = /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+rg/g;
       const strokeColorPattern = /(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s+RG/g;
       const strokeWidthPattern = /(-?\d+(?:\.\d+)?)\s+w/g;
+      const grayPattern = /(-?\d+(?:\.\d+)?)\s+g/g;
+      const GrayPattern = /(-?\d+(?:\.\d+)?)\s+G/g;
 
-      // Extract colors
+      // Extract colors with better color space support
       let colorMatch;
       while ((colorMatch = fillColorPattern.exec(streamContent)) !== null) {
         const r = Math.round(parseFloat(colorMatch[1]) * 255);
         const g = Math.round(parseFloat(colorMatch[2]) * 255);
         const b = Math.round(parseFloat(colorMatch[3]) * 255);
         currentFill = `rgb(${r}, ${g}, ${b})`;
+        console.log(`🎨 Fill color: ${currentFill}`);
       }
 
       while ((colorMatch = strokeColorPattern.exec(streamContent)) !== null) {
@@ -1078,17 +1350,32 @@ export class AdobeAIParser {
         const g = Math.round(parseFloat(colorMatch[2]) * 255);
         const b = Math.round(parseFloat(colorMatch[3]) * 255);
         currentStroke = `rgb(${r}, ${g}, ${b})`;
+        console.log(`🖊️ Stroke color: ${currentStroke}`);
+      }
+
+      // Handle grayscale colors
+      while ((colorMatch = grayPattern.exec(streamContent)) !== null) {
+        const gray = Math.round(parseFloat(colorMatch[1]) * 255);
+        currentFill = `rgb(${gray}, ${gray}, ${gray})`;
+        console.log(`🔘 Gray fill: ${currentFill}`);
+      }
+
+      while ((colorMatch = GrayPattern.exec(streamContent)) !== null) {
+        const gray = Math.round(parseFloat(colorMatch[1]) * 255);
+        currentStroke = `rgb(${gray}, ${gray}, ${gray})`;
+        console.log(`⚫ Gray stroke: ${currentStroke}`);
       }
 
       // Extract stroke width
       let widthMatch;
       while ((widthMatch = strokeWidthPattern.exec(streamContent)) !== null) {
         currentStrokeWidth = parseFloat(widthMatch[1]);
+        console.log(`📏 Stroke width: ${currentStrokeWidth}`);
       }
 
-      // Parse path commands
+      // Parse coordinate-based path commands
       let pathMatch;
-      while ((pathMatch = pathPattern.exec(streamContent)) !== null) {
+      while ((pathMatch = coordinatePattern.exec(streamContent)) !== null) {
         const x = parseFloat(pathMatch[1]);
         const y = parseFloat(pathMatch[2]);
         const command = pathMatch[3];
@@ -1492,7 +1779,7 @@ export class AdobeAIParser {
   /**
    * Create informative placeholders when no objects are found
    */
-  private static createInformativePlaceholders(width: number, height: number): AIPathData[] {
+  private static createInformativePlaceholders(width: number, height: number, fontMap?: Record<string, string>): AIPathData[] {
     return [
       {
         id: 'info_background',
