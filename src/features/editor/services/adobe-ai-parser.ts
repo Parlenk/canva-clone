@@ -863,16 +863,20 @@ export class AdobeAIParser {
   }
 
   private static createFabricPath(aiObject: AIPathData, metadata: AIFileMetadata): any {
-    // Convert AI coordinates to SVG path
-    const pathString = this.coordinatesToSVGPath(aiObject.coordinates);
+    // Transform all coordinates to canvas space first
+    const transformedCoords = aiObject.coordinates.map(coord => this.transformCoordinates(coord, metadata));
+    
+    // Convert transformed coordinates to SVG path
+    const pathString = this.coordinatesToSVGPath(transformedCoords);
     
     // For placeholder objects with rectangle coordinates, create a rectangle instead
     if (aiObject.coordinates.length === 4 && (aiObject.id.includes('placeholder') || aiObject.id.includes('pdf_background') || aiObject.id.includes('pdf_indicator'))) {
-      const coords = aiObject.coordinates;
-      const left = Math.min(...coords.map(c => c[0]));
-      const top = Math.min(...coords.map(c => c[1]));
-      const width = Math.max(...coords.map(c => c[0])) - left;
-      const height = Math.max(...coords.map(c => c[1])) - top;
+      const left = Math.min(...transformedCoords.map(c => c[0]));
+      const top = Math.min(...transformedCoords.map(c => c[1]));
+      const width = Math.max(...transformedCoords.map(c => c[0])) - left;
+      const height = Math.max(...transformedCoords.map(c => c[1])) - top;
+      
+      console.log(`📐 Creating rectangle: AI coords -> canvas coords, size ${width}x${height} at [${left}, ${top}]`);
       
       return {
         type: 'rect',
@@ -895,14 +899,20 @@ export class AdobeAIParser {
     const fill = aiObject.fill || (aiObject.stroke ? 'transparent' : '#e0e0e0');
     const stroke = aiObject.stroke || '#666666';
     
+    // Use first transformed coordinate for positioning
+    const firstCoord = transformedCoords[0] || [100, 100];
+    
+    console.log(`🎨 Creating path at AI coords [${aiObject.coordinates[0]?.[0]}, ${aiObject.coordinates[0]?.[1]}] -> canvas coords [${firstCoord[0]}, ${firstCoord[1]}]`);
+    console.log(`🎨 Path has ${aiObject.coordinates.length} points, fill="${fill}", stroke="${stroke}"`);
+    
     return {
       type: 'path',
       path: pathString,
-      left: aiObject.coordinates[0]?.[0] || 0,
-      top: aiObject.coordinates[0]?.[1] || 0,
+      left: firstCoord[0],
+      top: firstCoord[1],
       fill: fill,
       stroke: stroke,
-      strokeWidth: aiObject.strokeWidth || 2,
+      strokeWidth: Math.max(aiObject.strokeWidth || 1, 0.5),
       opacity: aiObject.opacity || 1,
       scaleX: 1,
       scaleY: 1,
@@ -913,13 +923,18 @@ export class AdobeAIParser {
     // Handle multi-line text by centering properly
     const isMultiLine = aiObject.text?.includes('\n') || false;
     
-    return {
+    // Transform coordinates to canvas space
+    const transformedCoords = this.transformCoordinates(aiObject.coordinates[0] || [100, 100], metadata);
+    
+    console.log(`📝 Creating text at AI coords [${aiObject.coordinates[0]?.[0]}, ${aiObject.coordinates[0]?.[1]}] -> canvas coords [${transformedCoords[0]}, ${transformedCoords[1]}]`);
+    
+    const textObject = {
       type: 'text',
       text: aiObject.text || 'Imported Text',
-      left: aiObject.coordinates[0]?.[0] || 100,
-      top: aiObject.coordinates[0]?.[1] || 100,
+      left: transformedCoords[0],
+      top: transformedCoords[1],
       fontFamily: getFontForText(aiObject.fontFamily || 'default', fontMap || {}, 'Arial'),
-      fontSize: aiObject.fontSize || 14,
+      fontSize: Math.max(aiObject.fontSize || 14, 10), // Ensure minimum readable size
       fill: aiObject.fill || '#333333',
       opacity: aiObject.opacity || 1,
       scaleX: 1,
@@ -944,6 +959,60 @@ export class AdobeAIParser {
       strokeWidth: 1,
       opacity: 0.5,
     };
+  }
+
+  /**
+   * Transform AI coordinates to canvas coordinate system
+   * AI files often use different coordinate origins and scales
+   */
+  private static transformCoordinates(coord: number[], metadata: AIFileMetadata): number[] {
+    if (!coord || coord.length < 2) return [100, 100]; // Safe fallback
+    
+    let [x, y] = coord;
+    
+    // Get AI file dimensions
+    const aiWidth = metadata.pageSize.width || 800;
+    const aiHeight = metadata.pageSize.height || 600;
+    
+    // Canvas dimensions (reasonable defaults for web canvas)
+    const canvasWidth = 1000;  
+    const canvasHeight = 700;  
+    
+    // AI files typically use bottom-left origin (PDF style), web canvas uses top-left
+    // So we need to flip the Y coordinate
+    const transformedY = aiHeight - y;
+    
+    // Scale coordinates to fit canvas better if needed
+    let scaleX = 1;
+    let scaleY = 1;
+    
+    // If AI dimensions are very large, scale down proportionally
+    const maxDimension = Math.max(aiWidth, aiHeight);
+    const maxCanvas = Math.max(canvasWidth, canvasHeight);
+    
+    if (maxDimension > maxCanvas) {
+      const scale = (maxCanvas * 0.8) / maxDimension; // 80% to leave margin
+      scaleX = scale;
+      scaleY = scale;
+    }
+    
+    // Apply scaling and center if needed
+    let finalX = x * scaleX;
+    let finalY = transformedY * scaleY;
+    
+    // Add centering offset if content is smaller than canvas
+    if (aiWidth * scaleX < canvasWidth) {
+      finalX += (canvasWidth - aiWidth * scaleX) / 2;
+    }
+    if (aiHeight * scaleY < canvasHeight) {
+      finalY += (canvasHeight - aiHeight * scaleY) / 2;
+    }
+    
+    // Ensure coordinates are positive and reasonable
+    finalX = Math.max(0, finalX);
+    finalY = Math.max(0, finalY);
+    
+    return [Math.round(finalX), Math.round(finalY)];
   }
 
   private static coordinatesToSVGPath(coordinates: number[][]): string {
