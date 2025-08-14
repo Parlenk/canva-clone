@@ -270,10 +270,44 @@ const buildEditor = ({
         return instructions;
 
       } catch (error) {
-        console.error('❌ TRUE AI resize failed - NO FALLBACKS ALLOWED');
+        console.error('❌ AI resize failed, using simple resize fallback');
         console.error('❌ Error details:', error);
-        // NO FALLBACKS - Show error to user
-        throw new Error(`TRUE AI ONLY MODE: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        
+        // Simple fallback: just resize workspace and center objects
+        const workspace = getWorkspace();
+        if (workspace) {
+          workspace.set(newSize);
+          canvas.setWidth(newSize.width);
+          canvas.setHeight(newSize.height);
+          
+          // Simple proportional scaling for all objects
+          const scaleX = newSize.width / currentSize.width;
+          const scaleY = newSize.height / currentSize.height;
+          
+          canvas.getObjects().forEach((obj) => {
+            if (obj.name === 'clip') return; // Skip workspace
+            
+            obj.set({
+              left: (obj.left || 0) * scaleX,
+              top: (obj.top || 0) * scaleY,
+              scaleX: (obj.scaleX || 1) * scaleX,
+              scaleY: (obj.scaleY || 1) * scaleY,
+            });
+          });
+          
+          autoZoom();
+          save();
+          canvas.renderAll();
+          
+          // Return simple resize result
+          return {
+            success: true,
+            message: 'Canvas resized with simple scaling',
+            changes: `Scaled all objects by ${scaleX.toFixed(2)}x horizontally and ${scaleY.toFixed(2)}x vertically`
+          };
+        }
+        
+        throw new Error(`Resize failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     },
     changeBackground: (background: string) => {

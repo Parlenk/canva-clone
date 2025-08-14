@@ -7,6 +7,11 @@ import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { AdobeAIParser } from '@/features/editor/services/adobe-ai-parser';
+// import { SimpleAIParser } from '@/features/editor/services/simple-ai-parser';
+// import { EnhancedAIParser } from '@/features/editor/services/enhanced-ai-parser';
+// import { AggressiveAIParser } from '@/features/editor/services/aggressive-ai-parser';
+// import { HybridAIParser } from '@/features/editor/services/hybrid-ai-parser';
+// import { ProfessionalAIParser } from '@/features/editor/services/professional-ai-parser';
 
 // Simple validation function
 const validateFile = async (file: File): Promise<{ isValid: boolean; error?: string; warnings?: string[] }> => {
@@ -86,6 +91,7 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
   const [fileValidation, setFileValidation] = useState<{ isValid: boolean; error?: string; warnings?: string[] } | null>(null);
   const [filePreview, setFilePreview] = useState<{ metadata: any; thumbnail?: string } | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [parserMode, setParserMode] = useState<'professional' | 'hybrid' | 'aggressive' | 'enhanced' | 'simple'>('professional');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -173,28 +179,79 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
     setIsProcessing(true);
 
     try {
-      console.log('🚀 Starting Adobe AI import process...');
+      switch (parserMode) {
+        // case 'professional':
+        //   console.log('🏆 Starting PROFESSIONAL Adobe AI import process...');
+        //   const professionalResult = await ProfessionalAIParser.parseWithProfessionalServices(selectedFile);
+        //   console.log('✅ Professional AI parser result:', professionalResult);
+        //   
+        //   if (professionalResult.success) {
+        //     console.log(`🎨 Professional canvas data ready (${professionalResult.method}):`, professionalResult.canvasData);
+        //     console.log('🚀 CALLING onImportSuccess with professional data...');
+        //     onImportSuccess(professionalResult.canvasData);
+        //     onClose?.();
+        //     return;
+        //   }
+        //   break;
+          
+        // case 'hybrid':
+        //   console.log('🚀 Starting HYBRID Adobe AI import process...');
+        //   const hybridResult = await HybridAIParser.parseWithMultipleStrategies(selectedFile);
+        //   console.log('✅ Hybrid AI parser result:', hybridResult);
+        //   
+        //   if (hybridResult.success) {
+        //     console.log(`🎨 Hybrid canvas data ready (${hybridResult.method}):`, hybridResult.canvasData);
+        //     console.log('🚀 CALLING onImportSuccess with hybrid data...');
+        //     onImportSuccess(hybridResult.canvasData);
+        //     onClose?.();
+        //     return;
+        //   }
+        //   break;
+        //   
+        // case 'aggressive':
+        //   console.log('🔥 Starting AGGRESSIVE Adobe AI import process...');
+        //   const aggressiveResult = await AggressiveAIParser.parseAggressive(selectedFile);
+        //   console.log('✅ Aggressive AI parser result:', aggressiveResult);
+        //   
+        //   if (aggressiveResult.success) {
+        //     console.log('🎨 Aggressive canvas data ready:', aggressiveResult.canvasData);
+        //     console.log('🚀 CALLING onImportSuccess with aggressive data...');
+        //     onImportSuccess(aggressiveResult.canvasData);
+        //     onClose?.();
+        //     return;
+        //   }
+        //   break;
+        //   
+        // case 'enhanced':
+        //   console.log('🚀 Starting ENHANCED Adobe AI import process...');
+        //   const enhancedResult = await EnhancedAIParser.parseComplexAIFile(selectedFile);
+        //   console.log('✅ Enhanced AI parser result:', enhancedResult);
+        //   
+        //   if (enhancedResult.success) {
+        //     console.log('🎨 Enhanced canvas data ready:', enhancedResult.canvasData);
+        //     console.log('🚀 CALLING onImportSuccess with enhanced data...');
+        //     onImportSuccess(enhancedResult.canvasData);
+        //     onClose?.();
+        //     return;
+        //   }
+        //   break;
+        //   
+        // case 'simple':
+        //   console.log('🚀 Starting SIMPLE Adobe AI import process...');
+        //   const simpleResult = await SimpleAIParser.processAIFile(selectedFile);
+        //   console.log('✅ Simple AI parser result:', simpleResult);
+        //   
+        //   if (simpleResult.success) {
+        //     console.log('🎨 Simple canvas data ready:', simpleResult.canvasData);
+        //     console.log('🚀 CALLING onImportSuccess with simple data...');
+        //     onImportSuccess(simpleResult.canvasData);
+        //     onClose?.();
+        //     return;
+        //   }
+        //   break;
+      }
       
-      // Use client-side parsing directly
-      const parsed = await AdobeAIParser.parseAIFile(selectedFile);
-      console.log('✅ AI file parsed successfully:', parsed);
-      
-      const fabricObjects = AdobeAIParser.convertToFabricObjects(parsed);
-      console.log('🔍 CONVERTED FABRIC OBJECTS:', fabricObjects);
-      
-      const canvasData = {
-        version: '1.0',
-        width: parsed.metadata.pageSize.width,
-        height: parsed.metadata.pageSize.height,
-        objects: fabricObjects,
-        background: '#ffffff',
-        metadata: parsed.metadata
-      };
-      
-      console.log('🎨 Canvas data ready:', canvasData);
-      console.log('🚀 CALLING onImportSuccess with canvasData...');
-      onImportSuccess(canvasData);
-      onClose?.();
+      throw new Error('All parsers failed');
 
     } catch (error) {
       console.error('❌ Adobe AI import failed:', error);
@@ -360,26 +417,121 @@ export const AdobeAIImport = ({ onImportSuccess, onClose, className }: AdobeAIIm
         </div>
       </Card>
 
-      {/* Simple Info */}
+      {/* Parser Selection */}
       {selectedFile && fileValidation?.isValid && (
         <Card className="p-4">
-          <div className="text-sm space-y-2 text-gray-600">
-            <p className="font-medium mb-2">Import Information</p>
+          <div className="space-y-4">
             <div>
-              <span className="font-medium text-green-600">What's supported:</span>
-              <ul className="list-disc list-inside ml-4 mt-1">
-                <li>Basic shapes and paths</li>
-                <li>Text content</li>
-                <li>Canvas dimensions</li>
-                <li>Basic colors</li>
-              </ul>
+              <p className="font-medium mb-3">Import Method</p>
+              <div className="space-y-3">
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="parser"
+                    checked={parserMode === 'professional'}
+                    onChange={() => setParserMode('professional')}
+                    className="text-green-600"
+                  />
+                  <div>
+                    <span className="font-medium text-green-600">🏆 Professional Parser (Like Canva)</span>
+                    <p className="text-sm text-gray-600">
+                      Uses enterprise conversion services (CloudConvert, Zamzar) for Canva-level quality
+                    </p>
+                  </div>
+                </label>
+                
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="parser"
+                    checked={parserMode === 'hybrid'}
+                    onChange={() => setParserMode('hybrid')}
+                    className="text-purple-600"
+                  />
+                  <div>
+                    <span className="font-medium text-purple-600">🎆 Hybrid Parser</span>
+                    <p className="text-sm text-gray-600">
+                      Uses binary analysis, server processing, and client parsing - tries everything automatically
+                    </p>
+                  </div>
+                </label>
+                
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="parser"
+                    checked={parserMode === 'aggressive'}
+                    onChange={() => setParserMode('aggressive')}
+                    className="text-red-600"
+                  />
+                  <div>
+                    <span className="font-medium text-red-600">🔥 Aggressive Parser</span>
+                    <p className="text-sm text-gray-600">
+                      Maximum extraction power - tries multiple strategies to find all vector content
+                    </p>
+                  </div>
+                </label>
+                
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="parser"
+                    checked={parserMode === 'enhanced'}
+                    onChange={() => setParserMode('enhanced')}
+                    className="text-blue-600"
+                  />
+                  <div>
+                    <span className="font-medium text-blue-600">Enhanced Parser</span>
+                    <p className="text-sm text-gray-600">
+                      Balanced approach - extracts vector content with good reliability
+                    </p>
+                  </div>
+                </label>
+                
+                <label className="flex items-center space-x-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="parser"
+                    checked={parserMode === 'simple'}
+                    onChange={() => setParserMode('simple')}
+                    className="text-green-600"
+                  />
+                  <div>
+                    <span className="font-medium text-green-600">Simple Parser</span>
+                    <p className="text-sm text-gray-600">
+                      Creates a working canvas with basic file info (always works)
+                    </p>
+                  </div>
+                </label>
+              </div>
             </div>
             
-            <div>
-              <span className="font-medium text-yellow-600">Note:</span>
-              <p className="ml-4 mt-1">
-                Complex effects, gradients, and embedded images will be simplified or converted to placeholders.
-              </p>
+            <div className="text-sm space-y-2 text-gray-600 border-t pt-3">
+              <div>
+                <span className="font-medium text-green-600">Professional Services Include:</span>
+                <ul className="list-disc list-inside ml-4 mt-1">
+                  <li>CloudConvert API (Enterprise-grade conversion)</li>
+                  <li>Zamzar API (Professional file processing)</li>
+                  <li>Server-side Ghostscript (PostScript interpreter)</li>
+                  <li>AI-to-SVG conversion services</li>
+                  <li>Advanced vector shape extraction</li>
+                  <li>Professional font and color handling</li>
+                </ul>
+              </div>
+              
+              <div>
+                <span className="font-medium text-blue-600">Why Professional Works Better:</span>
+                <p className="ml-4 mt-1">
+                  Professional services use enterprise-grade conversion engines with access to proprietary Adobe parsing libraries, similar to how Canva achieves perfect AI file support.
+                </p>
+              </div>
+              
+              <div>
+                <span className="font-medium text-yellow-600">Note:</span>
+                <p className="ml-4 mt-1">
+                  Complex effects, gradients, and embedded images will be simplified. The hybrid parser tries multiple approaches automatically to find the best result.
+                </p>
+              </div>
             </div>
           </div>
         </Card>

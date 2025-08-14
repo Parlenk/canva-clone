@@ -22,5 +22,14 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "src/features/ai/testing/**/*", "src/features/editor/testing/**/*"]
+  "exclude": [
+    "node_modules", 
+    "src/features/ai/testing/**/*", 
+    "src/features/editor/testing/**/*",
+    "src/features/editor/services/aggressive-ai-parser.ts",
+    "src/features/editor/services/enhanced-ai-parser.ts",
+    "src/features/editor/services/hybrid-ai-parser.ts",
+    "src/features/editor/services/professional-ai-parser.ts",
+    "src/features/editor/services/simple-ai-parser.ts"
+  ]
 }

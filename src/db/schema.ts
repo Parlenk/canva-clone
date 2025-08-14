@@ -1,16 +1,16 @@
 import { createId } from '@paralleldrive/cuid2';
 import { relations } from 'drizzle-orm';
-import { boolean, integer, pgTable, primaryKey, text, timestamp, jsonb, real } from 'drizzle-orm/pg-core';
+import { integer, sqliteTable, primaryKey, text, real } from 'drizzle-orm/sqlite-core';
 import { createInsertSchema } from 'drizzle-zod';
 import type { AdapterAccountType } from 'next-auth/adapters';
 
-export const users = pgTable('user', {
+export const users = sqliteTable('user', {
   id: text('id')
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
   name: text('name'),
   email: text('email').unique(),
-  emailVerified: timestamp('emailVerified', { mode: 'date' }),
+  emailVerified: integer('emailVerified', { mode: 'timestamp' }),
   image: text('image'),
   password: text('password'),
 });
@@ -19,7 +19,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
 }));
 
-export const accounts = pgTable(
+export const accounts = sqliteTable(
   'account',
   {
     userId: text('userId')
@@ -43,20 +43,20 @@ export const accounts = pgTable(
   }),
 );
 
-export const sessions = pgTable('session', {
+export const sessions = sqliteTable('session', {
   sessionToken: text('sessionToken').primaryKey(),
   userId: text('userId')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
-  expires: timestamp('expires', { mode: 'date' }).notNull(),
+  expires: integer('expires', { mode: 'timestamp' }).notNull(),
 });
 
-export const verificationTokens = pgTable(
+export const verificationTokens = sqliteTable(
   'verificationToken',
   {
     identifier: text('identifier').notNull(),
     token: text('token').notNull(),
-    expires: timestamp('expires', { mode: 'date' }).notNull(),
+    expires: integer('expires', { mode: 'timestamp' }).notNull(),
   },
   (verificationToken) => ({
     compositePk: primaryKey({
@@ -65,7 +65,7 @@ export const verificationTokens = pgTable(
   }),
 );
 
-export const authenticators = pgTable(
+export const authenticators = sqliteTable(
   'authenticator',
   {
     credentialID: text('credentialID').notNull().unique(),
@@ -76,7 +76,7 @@ export const authenticators = pgTable(
     credentialPublicKey: text('credentialPublicKey').notNull(),
     counter: integer('counter').notNull(),
     credentialDeviceType: text('credentialDeviceType').notNull(),
-    credentialBackedUp: boolean('credentialBackedUp').notNull(),
+    credentialBackedUp: integer('credentialBackedUp', { mode: 'boolean' }).notNull(),
     transports: text('transports'),
   },
   (authenticator) => ({
@@ -86,7 +86,7 @@ export const authenticators = pgTable(
   }),
 );
 
-export const projects = pgTable('project', {
+export const projects = sqliteTable('project', {
   id: text('id').primaryKey().$defaultFn(createId),
   name: text('name').notNull(),
   userId: text('userId')
@@ -98,9 +98,9 @@ export const projects = pgTable('project', {
   height: integer('height').notNull(),
   width: integer('width').notNull(),
   thumbnailUrl: text('thumbnailUrl'),
-  isTemplate: boolean('isTemplate').$defaultFn(() => false),
-  createdAt: timestamp('createdAt', { mode: 'date' }).notNull(),
-  updatedAt: timestamp('updatedAt', { mode: 'date' }).notNull(),
+  isTemplate: integer('isTemplate', { mode: 'boolean' }).$defaultFn(() => false),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull(),
 });
 
 export const projectsRelations = relations(projects, ({ one }) => ({
@@ -113,34 +113,34 @@ export const projectsRelations = relations(projects, ({ one }) => ({
 export const projectsInsertSchema = createInsertSchema(projects);
 
 // AI Resize Training Data Tables
-export const resizeSessions = pgTable('resize_session', {
+export const resizeSessions = sqliteTable('resize_session', {
   id: text('id').primaryKey().$defaultFn(createId),
   userId: text('userId').references(() => users.id, { onDelete: 'cascade' }),
   projectId: text('projectId').references(() => projects.id, { onDelete: 'set null' }), // Don't cascade delete
-  originalCanvas: jsonb('originalCanvas').notNull(),
-  targetDimensions: jsonb('targetDimensions').notNull(),
-  aiResult: jsonb('aiResult').notNull(),
+  originalCanvas: text('originalCanvas').notNull(),
+  targetDimensions: text('targetDimensions').notNull(),
+  aiResult: text('aiResult').notNull(),
   userRating: integer('userRating'), // 1-5 stars, add constraint
   feedbackText: text('feedbackText'),
-  manualCorrections: jsonb('manualCorrections'),
+  manualCorrections: text('manualCorrections'),
   processingTime: integer('processingTime'), // milliseconds, add constraint
   variantId: text('variantId'), // Track A/B test variant
   status: text('status').notNull().$defaultFn(() => 'completed'), // completed, failed, pending
   errorMessage: text('errorMessage'), // Store error details
-  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().$defaultFn(() => new Date()),
-  updatedAt: timestamp('updatedAt', { mode: 'date' }).notNull().$defaultFn(() => new Date()),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+  updatedAt: integer('updatedAt', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
-export const trainingData = pgTable('training_data', {
+export const trainingData = sqliteTable('training_data', {
   id: text('id').primaryKey().$defaultFn(createId),
   sessionId: text('sessionId').notNull().references(() => resizeSessions.id, { onDelete: 'cascade' }),
-  inputFeatures: jsonb('inputFeatures').notNull(), // Canvas analysis features
-  expectedOutput: jsonb('expectedOutput').notNull(), // Ideal positioning/scaling
+  inputFeatures: text('inputFeatures').notNull(), // Canvas analysis features
+  expectedOutput: text('expectedOutput').notNull(), // Ideal positioning/scaling
   qualityScore: real('qualityScore').notNull(), // 0.0-1.0 based on user feedback
-  validated: boolean('validated').notNull().$defaultFn(() => false),
+  validated: integer('validated', { mode: 'boolean' }).notNull().$defaultFn(() => false),
   validatedBy: text('validatedBy'), // Track who validated
-  validatedAt: timestamp('validatedAt', { mode: 'date' }),
-  createdAt: timestamp('createdAt', { mode: 'date' }).notNull().$defaultFn(() => new Date()),
+  validatedAt: integer('validatedAt', { mode: 'timestamp' }),
+  createdAt: integer('createdAt', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
 
 export const resizeSessionsRelations = relations(resizeSessions, ({ one, many }) => ({
@@ -164,4 +164,3 @@ export const trainingDataRelations = relations(trainingData, ({ one }) => ({
 
 export const resizeSessionsInsertSchema = createInsertSchema(resizeSessions);
 export const trainingDataInsertSchema = createInsertSchema(trainingData);
-
